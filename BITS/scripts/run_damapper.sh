@@ -1,19 +1,21 @@
 #!/bin/bash
-#$ -N damapper
-#$ -o sge.log
+#$ -N JOB_NAME
+#$ -o OUT_LOG
 #$ -j y
 #$ -S /bin/bash
 #$ -cwd
 #$ -V
-#$ -pe smp 8
-#$ -l hostname=ax02
+#$ -pe smp N_CORE
 
-fasta2DAM CONTIGS pilon.fasta
-DBsplit -s500 CONTIGS
-fasta2DB READS filtered_subreads.fasta
+REF_FASTA=$1
+READS_FASTA=$2
+
+fasta2DAM REF ${REF_FASTA}
+DBsplit -s500 REF
+fasta2DB READS ${READS_FASTA}
 DBsplit -s500 READS
-HPC.damapper -T8 -C -N CONTIGS READS | bash -v
-LAcat CONTIGS.READS.*.las > CONTIGS.READS.las
-LAsort -a CONTIGS.READS.las
-LAdump -o -c CONTIGS READS CONTIGS.READS.S.las > ladump
-DBdump -r -h CONTIGS > dbdump
+HPC.damapper -T8 -C -N REF READS | bash -v
+LAcat REF.READS.*.las > REF.READS.las
+LAsort -a REF.READS.las
+LAdump -o -c REF READS REF.READS.S.las > REF.READS.ladump
+DBdump -r -h REF > REF.dbdump
