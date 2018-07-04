@@ -1,0 +1,3 @@
+[submodule "pbcore"]
+	path = pbcore
+	url = https://github.com/yoshihikosuzuki/pbcore
