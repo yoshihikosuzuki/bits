@@ -9,7 +9,7 @@ def run_command(command):
     """
     General-purpose command executer.
     """
-    
+
     try:
         out = subprocess.check_output(command, shell=True)
     except subprocess.CalledProcessError as proc:
@@ -19,36 +19,70 @@ def run_command(command):
         return out.decode('utf-8')
 
 
-# XXX: TODO: use a pipeflow management system
-# (or use "-sync y" option (wait until job complete) of SGE)
-def qsub_script(in_script_name, out_script_name, args=(), job_name="run_script", out_log="sge.log", n_core=1, run_directly=False):
+def generate_script(template_script_name, args=()):
     """
-    Job submitting function with BITS' template scripts.
-    <in_script_name> is the original (not SGE version) script file to be run located in the install path.
-    <out_script_name> is a script file to be submitted with headers for SGE.
-    <args> is a tuple of arguments for the script (must be in order of use).
-    If <run_directly> is True, the script will be run without SGE.
+    Generate an executable bash script using a template bundled with BITS.
+    This is basically called from BITS' internal functions.
     """
 
-    # Check the template script file
-    install_script_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts")   # TODO: where should "install" scripts?
-    script_path = os.path.join(install_script_root, in_script_name)
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", template_script_name)
+
     if not os.path.isfile(script_path):
         logger.error("Script file not found")
         sys.exit(1)
 
-    # Replace parameters and arguments in the template
-    command = f"sed -e 's/JOB_NAME/{job_name}/' -e 's/OUT_LOG/{out_log}/' -e 's/N_CORE/{n_core}/' {script_path}"
+    # Replace arguments in the template
+    command = f"cat {script_path}"
     for i, arg in enumerate(args, 1):
         command += f" | sed -e 's/\${i}/{arg}/g'"
-    command += f" > {out_script_name}"
+    command += f" > {template_script_name}"
     run_command(command)
 
-    if run_directly:   # Run without SGE
-        print(run_command(f"bash {out_script_name}"))   # TODO: add source ~/.bash_profile before?
-    else:   # Run with SGE
-        run_qsub_script = os.path.join(install_script_root, "run_qsub.sh")
-        print(run_command(f"bash {run_qsub_script} {out_script_name}"))
+
+def sge_nize(in_script_name, job_name="run_script", out_log="sge.log", n_core=1, sync=True):
+    """
+    Add headers for qsub of SGE.
+    """
+
+    print(n_core)
+
+    with open(in_script_name + ".qsub", 'w') as out:
+        out.write(
+f"""#$ -N {job_name}
+#$ -o {out_log}
+#$ -j y
+#$ -S /bin/bash
+#$ -cwd
+#$ -V
+#$ -pe smp {n_core}
+#$ -sync {"y" if sync is True else "n"}
+""")
+
+        with open(in_script_name, 'r') as f:
+            out.write(f.read())
+
+
+def slurm_nize(in_script_name, job_name="run_script", out_log="sbatch_stdout", err_log="sbatch_stderr", n_core=1, time_limit="24:00:00", mem_per_cpu=1024, partition="batch", wait=True):
+    """
+    Add headers for sbatch of SLURM.
+    """
+
+    with open(in_script_name + ".slurm", 'w') as out:
+        out.write(
+f"""#SBATCH -J {job_name}
+#SBATCH -o {out_log}
+#SBATCH -e {err_log}
+#SBATCH -n 1
+#SBATCH -N 1
+#SBATCH -c {n_core}
+#SBATCH -t {time_limit}
+#SBATCH --mem-per-cpu={mem_per_cpu}
+#SBATCH --partition={partition}
+{"#SBATCH --wait" if wait is True else ""}
+""")
+
+        with open(in_script_name, 'r') as f:
+            out.write(f.read())
 
 
 def make_line(x0, y0, x1, y1, col, width):
