@@ -1,4 +1,4 @@
-Dipsered codes make it hard to re-use them. Here I gather small bioinformatics-related codes as a python3 library as well as some shell scripts used in it.
+Dispersed codes make it hard to re-use them. Here I gather small bioinformatics-related codes as a python3 library as well as some shell scripts used in it.
 
 ## Function list
 
