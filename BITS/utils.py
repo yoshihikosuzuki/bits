@@ -48,7 +48,8 @@ def sge_nize(in_script_name, job_name="run_script", out_log="sge.log", n_core=1,
 
     with open(in_script_name + ".qsub", 'w') as out:
         out.write(
-f"""#$ -N {job_name}
+f"""#!/bin/bash
+#$ -N {job_name}
 #$ -o {out_log}
 #$ -j y
 #$ -S /bin/bash
@@ -56,6 +57,7 @@ f"""#$ -N {job_name}
 #$ -V
 #$ -pe smp {n_core}
 #$ -sync {"y" if sync is True else "n"}
+
 """)
 
         with open(in_script_name, 'r') as f:
@@ -69,7 +71,8 @@ def slurm_nize(in_script_name, job_name="run_script", out_log="sbatch_stdout", e
 
     with open(in_script_name + ".slurm", 'w') as out:
         out.write(
-f"""#SBATCH -J {job_name}
+f"""#!/bin/bash
+#SBATCH -J {job_name}
 #SBATCH -o {out_log}
 #SBATCH -e {err_log}
 #SBATCH -n 1
@@ -79,6 +82,7 @@ f"""#SBATCH -J {job_name}
 #SBATCH --mem-per-cpu={mem_per_cpu}
 #SBATCH --partition={partition}
 {"#SBATCH --wait" if wait is True else ""}
+
 """)
 
         with open(in_script_name, 'r') as f:
