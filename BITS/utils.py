@@ -19,35 +19,46 @@ def run_command(command):
         return out.decode('utf-8')
 
 
+def load_file(in_file_name):
+    """
+    Load a file as string.
+    """
+
+    try:
+        return open(in_file_name, 'r').read()
+    except FileNotFoundError as err:
+        logger.error(err)
+        sys.exit(1)
+
+
+# TODO: writing shell scripts in python codes is better?
 def generate_script(template_script_name, args=()):
     """
     Generate an executable bash script using a template bundled with BITS.
     This is basically called from BITS' internal functions.
     """
 
-    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", template_script_name)
-
-    if not os.path.isfile(script_path):
-        logger.error("Script file not found")
-        sys.exit(1)
+    script = load_file(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "scripts",
+                                    template_script_name))
 
     # Replace arguments in the template
-    command = f"cat {script_path}"
     for i, arg in enumerate(args, 1):
-        command += f" | sed -e 's/\${i}/{arg}/g'"
-    command += f" > {template_script_name}"
-    run_command(command)
+        script = script.replace(f"${i}", f"{arg}")
+
+    return script
 
 
-def sge_nize(in_script_name, job_name="run_script", out_log="sge.log", n_core=1, sync=True):
+def sge_nize(script,
+             job_name="run_script",
+             out_log="sge.log",
+             n_core=1,
+             sync=True):
     """
     Add headers for qsub of SGE.
     """
 
-    print(n_core)
-
-    with open(in_script_name + ".qsub", 'w') as out:
-        out.write(
+    header = (
 f"""#!/bin/bash
 #$ -N {job_name}
 #$ -o {out_log}
@@ -60,17 +71,23 @@ f"""#!/bin/bash
 
 """)
 
-        with open(in_script_name, 'r') as f:
-            out.write(f.read())
+    return header + script
 
 
-def slurm_nize(in_script_name, job_name="run_script", out_log="sbatch_stdout", err_log="sbatch_stderr", n_core=1, time_limit="24:00:00", mem_per_cpu=1024, partition="batch", wait=True):
+def slurm_nize(script,
+               job_name="run_script",
+               out_log="sbatch_stdout",
+               err_log="sbatch_stderr",
+               n_core=1,
+               time_limit="24:00:00",
+               mem_per_cpu=1024,
+               partition="batch",
+               wait=True):
     """
     Add headers for sbatch of SLURM.
     """
 
-    with open(in_script_name + ".slurm", 'w') as out:
-        out.write(
+    header = (   # TODO: parameterize -n, -N and other options
 f"""#!/bin/bash
 #SBATCH -J {job_name}
 #SBATCH -o {out_log}
@@ -85,8 +102,7 @@ f"""#!/bin/bash
 
 """)
 
-        with open(in_script_name, 'r') as f:
-            out.write(f.read())
+    return header + script
 
 
 def make_line(x0, y0, x1, y1, col, width):
