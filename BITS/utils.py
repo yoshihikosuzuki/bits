@@ -53,7 +53,7 @@ def sge_nize(script,
              job_name="run_script",
              out_log="sge.log",
              n_core=1,
-             sync=True):
+             sync=True):   # TODO: intergate argument names with slurm_nize
     """
     Add headers for qsub of SGE.
     """
