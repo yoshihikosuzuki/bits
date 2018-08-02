@@ -13,15 +13,18 @@ def run_command(command):
     try:
         out = subprocess.check_output(command, shell=True)
     except subprocess.CalledProcessError as proc:
-        logger.error(proc.output.decode('utf-8'))
-        sys.exit(1)
+        #logger.error(proc.output.decode('utf-8'))
+        #sys.exit(1)
+        logger.warn(f"An error occured while command execution!")
+        return proc.output.decode('utf-8')
     else:
         return out.decode('utf-8')
 
 
-def load_file(in_file_name):
+def load_file_as_string(in_file_name):
     """
     Load a file as string.
+    You can use this as a proxy of "$ run_command("cat file")".
     """
 
     try:
@@ -31,14 +34,14 @@ def load_file(in_file_name):
         sys.exit(1)
 
 
-# TODO: writing shell scripts in python codes is better?
+# TODO: writing shell scripts in python codes is better? -> yes, so delete this function
 def generate_script(template_script_name, args=()):
     """
     Generate an executable bash script using a template bundled with BITS.
     This is basically called from BITS' internal functions.
     """
 
-    script = load_file(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    script = load_file_as_string(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     "scripts",
                                     template_script_name))
 
@@ -103,6 +106,17 @@ f"""#!/bin/bash
 """)
 
     return header + script
+
+
+RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
+
+
+def revcomp(seq):
+    """
+    Return the reverse complement of the given sequence.
+    """
+
+    return "".join([RC_MAP[c] for c in seq[::-1]])
 
 
 def make_line(x0, y0, x1, y1, col, width):
