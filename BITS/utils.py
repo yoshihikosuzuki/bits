@@ -74,7 +74,7 @@ f"""#!/bin/bash
 
 """)
 
-    return header + script
+    return header + script + '\n'
 
 
 def slurm_nize(script,
@@ -105,7 +105,7 @@ f"""#!/bin/bash
 
 """)
 
-    return header + script
+    return header + script + '\n'
 
 
 RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
