@@ -16,6 +16,7 @@ def run_command(command):
         #logger.error(proc.output.decode('utf-8'))
         #sys.exit(1)
         logger.warn(f"An error occured while command execution!")
+        #logger.exception(proc)   # TODO: is this ok?
         return proc.output.decode('utf-8')
     else:
         return out.decode('utf-8')
