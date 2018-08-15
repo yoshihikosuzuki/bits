@@ -47,6 +47,7 @@ class DotPlot:
 
 edlib_mode = {"global": "NW", "glocal": "HW", "local": "SHW"}
 
+
 def run_edlib(query, target, mode="global", swap_cigar=False):
     """
     Perform 1 vs 1 pairwise sequence alignment using edlib.
