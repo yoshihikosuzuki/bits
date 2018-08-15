@@ -1,11 +1,9 @@
-import os
-import sys
 import subprocess
 from interval import interval
 from logzero import logger
 
 
-def run_command(command):
+def run_command(command, show_error_msg=False):
     """
     General-purpose command executer.
     """
@@ -13,69 +11,34 @@ def run_command(command):
     try:
         out = subprocess.check_output(command, shell=True)
     except subprocess.CalledProcessError as proc:
-        #logger.error(proc.output.decode('utf-8'))
-        #sys.exit(1)
-        logger.warn(f"An error occured while command execution!")
-        #logger.exception(proc)   # TODO: is this ok?
+        logger.warn(f"An error occured while command execution")
+        if show_error_msg:
+            logger.exception(proc)
         return proc.output.decode('utf-8')
     else:
         return out.decode('utf-8')
-
-
-def load_file_as_string(in_file_name):
-    """
-    Load a file as string.
-    You can use this as a proxy of "$ run_command("cat file")".
-    """
-
-    try:
-        return open(in_file_name, 'r').read()
-    except FileNotFoundError as err:
-        logger.error(err)
-        sys.exit(1)
-
-
-# TODO: writing shell scripts in python codes is better? -> yes, so delete this function
-def generate_script(template_script_name, args=()):
-    """
-    Generate an executable bash script using a template bundled with BITS.
-    This is basically called from BITS' internal functions.
-    """
-
-    script = load_file_as_string(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "scripts",
-                                    template_script_name))
-
-    # Replace arguments in the template
-    for i, arg in enumerate(args, 1):
-        script = script.replace(f"${i}", f"{arg}")
-
-    return script
 
 
 def sge_nize(script,
              job_name="run_script",
              out_log="sge.log",
              n_core=1,
-             sync=True):   # TODO: intergate argument names with slurm_nize
+             wait=True):
     """
     Add headers for qsub of SGE.
     """
 
-    header = (
-f"""#!/bin/bash
-#$ -N {job_name}
-#$ -o {out_log}
-#$ -j y
-#$ -S /bin/bash
-#$ -cwd
-#$ -V
-#$ -pe smp {n_core}
-#$ -sync {"y" if sync is True else "n"}
+    header = '\n'.join([f"#!/bin/bash",
+                        f"#$ -N {job_name}",
+                        f"#$ -o {out_log}",
+                        f"#$ -j y",
+                        f"#$ -S /bin/bash",
+                        f"#$ -cwd",
+                        f"#$ -V",
+                        f"#$ -pe smp {n_core}",
+                        f"#$ -sync {'y' if wait is True else 'n'}"])
 
-""")
-
-    return header + script + '\n'
+    return f"{header}\n\n{script}\n"
 
 
 def slurm_nize(script,
@@ -91,33 +54,19 @@ def slurm_nize(script,
     Add headers for sbatch of SLURM.
     """
 
-    header = (   # TODO: parameterize -n, -N and other options
-f"""#!/bin/bash
-#SBATCH -J {job_name}
-#SBATCH -o {out_log}
-#SBATCH -e {err_log}
-#SBATCH -n 1
-#SBATCH -N 1
-#SBATCH -c {n_core}
-#SBATCH -t {time_limit}
-#SBATCH --mem-per-cpu={mem_per_cpu}
-#SBATCH --partition={partition}
-{"#SBATCH --wait" if wait is True else ""}
+    header = '\n'.join([f"#!/bin/bash",
+                        f"#SBATCH -J {job_name}",
+                        f"#SBATCH -o {out_log}",
+                        f"#SBATCH -e {err_log}",
+                        f"#SBATCH -n 1",
+                        f"#SBATCH -N 1",
+                        f"#SBATCH -c {n_core}",
+                        f"#SBATCH -t {time_limit}",
+                        f"#SBATCH --mem-per-cpu={mem_per_cpu}",
+                        f"#SBATCH --partition={partition}",
+                        f"{'#SBATCH --wait' if wait is True else ''}"])
 
-""")
-
-    return header + script + '\n'
-
-
-RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
-
-
-def revcomp(seq):
-    """
-    Return the reverse complement of the given sequence.
-    """
-
-    return "".join([RC_MAP[c] for c in seq[::-1]])
+    return f"{header}\n\n{script}\n"
 
 
 def make_line(x0, y0, x1, y1, col, width):
@@ -133,8 +82,8 @@ def make_line(x0, y0, x1, y1, col, width):
 
 def interval_len(intvls):
     """
-    For pyinterval (https://pyinterval.readthedocs.io/en/latest/), a module for interval.
-    Return the sum of the lengths of the intervals in the given interval object.
+    For pyinterval (https://pyinterval.readthedocs.io/en/latest/).
+    Return the sum of the interval lengths in <intvls>.
     """
     
     ret = 0
@@ -145,9 +94,9 @@ def interval_len(intvls):
 
 def subtract_interval(a_interval, b_interval, length_threshold=0):
     """
-    For pyinterval.
+    For pyinterval (https://pyinterval.readthedocs.io/en/latest/).
     Calculate A - B, where A and B are interval objects.
-    Afterwards, remove remaining intervals whose length are less than <length_threshold>.
+    Afterwards, remove remaining intervals shorter than <length_threshold>.
     """
     
     ret_interval = interval()
