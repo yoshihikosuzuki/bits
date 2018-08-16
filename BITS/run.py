@@ -187,12 +187,12 @@ def run_consed(in_seqs,
 
     if only_consensus:
         consed_out = consed_out.strip().split('\n')
-        logger.debug(f"{consed_out}")
         start_index = 0
         while consed_out[start_index][0] not in set(['a', 'c', 'g', 't']):
             start_index += 1
             if start_index == len(consed_out):
                 logger.error("No consensus sequence in the output")
+                return ''
         if start_index > 0:
             logger.debug(f"{consed_out[:start_index]}")
         return ''.join(consed_out[start_index:])
