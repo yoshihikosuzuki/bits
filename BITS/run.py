@@ -153,6 +153,38 @@ def run_edlib(query,
     return ret
 
 
+def _run_consed(in_seqs, d):
+    import consed
+    d["cons_seq"] = consed.consensus(in_seqs)
+
+
+def run_consed(in_seqs,
+               only_consensus=True,
+               variant_vector=False,
+               variant_graph=False,
+               variant_fraction=0.3,
+               n_iteration=1,   # times to iteratively run Consed
+               time_limit=10):   # in sec. to stop running Consed
+    # TODO: implement second stage of consed
+
+    from multiprocessing import Process, Manager
+
+    # Since Consed is sometimes trapped into infinite loop, watch the process (though it's slow....)
+    m = Manager()
+    d = m.dict()
+    p = Process(target=_run_consed, args=(in_seqs, d))
+    p.start()
+    p.join(time_limit)
+    if p.is_alive():
+        logger.warn(f"Kill freezed Consed process")
+        p.terminate()
+        p.join()
+        return ""
+    else:
+        return d["cons_seq"]
+
+
+"""
 def run_consed(in_seqs,
                only_consensus=True,
                out_prefix="out",
@@ -163,10 +195,6 @@ def run_consed(in_seqs,
                tmp_dir="tmp",
                n_iteration=1,   # times to iteratively run Consed
                parallel=False):   # avoid file name collision
-    """
-    Take consensus of sequences using Consed.
-    """
-
     # TODO: implement second stage of consed
 
     in_fname = f"{tmp_dir}/consed.seqs"
@@ -211,3 +239,4 @@ def run_consed(in_seqs,
         variant_matrix = run_command(command)
         with open(f"{out_prefix}.V", 'w') as f:
             f.write(f"{variant_matrix}")
+"""
