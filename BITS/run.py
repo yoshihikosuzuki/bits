@@ -1,4 +1,3 @@
-import os
 from logzero import logger
 
 from .utils import run_command
@@ -181,6 +180,8 @@ def run_consed(in_seqs,
         p.join()
         return ""
     else:
+        #p.close()
+        p.join()
         return d["cons_seq"]
 
 
