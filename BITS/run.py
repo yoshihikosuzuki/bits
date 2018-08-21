@@ -190,6 +190,7 @@ def run_consed(in_seqs,
                variant_fraction=0.3,
                n_iteration=1,   # times to iteratively run Consed
                time_limit=10):   # in sec. to stop running Consed
+
     for i in range(n_iteration):
         cons_seq = _run_consed(in_seqs,
                                only_consensus,
@@ -197,10 +198,17 @@ def run_consed(in_seqs,
                                variant_graph,
                                variant_fraction,
                                time_limit)
-        if cons_seq == "":
+
+        # Error in Consed or no more iterations
+        if cons_seq == "" or i == n_iteration - 1:
             break
-        if i != n_iteration - 1:
+
+        # Update input sequences for Consed with the previous consensus
+        if i == 0:
             in_seqs = [cons_seq] + in_seqs
+        else:
+            in_seqs = [cons_seq] + in_seqs[1:]
+
     return cons_seq
 
 
