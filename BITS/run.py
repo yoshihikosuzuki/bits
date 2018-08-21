@@ -149,26 +149,24 @@ def run_edlib(query,
     return ret
 
 
-def _run_consed(in_seqs, d):
+def __run_consed(in_seqs, d):
     import consed
     d["cons_seq"] = consed.consensus(in_seqs)
 
 
-def run_consed(in_seqs,
-               only_consensus=True,
-               variant_vector=False,
-               variant_graph=False,
-               variant_fraction=0.3,
-               n_iteration=1,   # times to iteratively run Consed
-               time_limit=10):   # in sec. to stop running Consed
-    # TODO: implement second stage of consed
+def _run_consed(in_seqs,
+                only_consensus,
+                variant_vector,
+                variant_graph,
+                variant_fraction,
+                time_limit):
 
     from multiprocessing import Process, Manager
 
     # Since Consed is sometimes trapped into infinite loop, watch the process (though it's slow....)
     m = Manager()
     d = m.dict()
-    p = Process(target=_run_consed, args=(in_seqs, d))
+    p = Process(target=__run_consed, args=(in_seqs, d))
     p.start()
     p.join(time_limit)
     if p.is_alive():
@@ -183,6 +181,27 @@ def run_consed(in_seqs,
             return ""
         else:
             return d["cons_seq"]
+
+
+def run_consed(in_seqs,
+               only_consensus=True,
+               variant_vector=False,
+               variant_graph=False,
+               variant_fraction=0.3,
+               n_iteration=1,   # times to iteratively run Consed
+               time_limit=10):   # in sec. to stop running Consed
+    for i in range(n_iteration):
+        cons_seq = _run_consed(in_seqs,
+                               only_consensus,
+                               variant_vector,
+                               variant_graph,
+                               variant_fraction,
+                               time_limit)
+        if cons_seq == "":
+            break
+        if i != n_iteration - 1:
+            in_seqs = [cons_seq] + in_seqs
+    return cons_seq
 
 
 """
