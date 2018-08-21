@@ -155,7 +155,6 @@ def _run_consed(in_seqs, d):
 
 
 def run_consed(in_seqs,
-               direct=True,   # directly call consed using wrapper
                only_consensus=True,
                variant_vector=False,
                variant_graph=False,
