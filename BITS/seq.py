@@ -3,7 +3,6 @@ from logzero import logger
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 
-from .run import run_consed
 from .utils import run_command
 
 
@@ -74,4 +73,4 @@ def consensus_adaptors(in_bax, out_adapters='adapters', out_consensus='adapter.c
     """
 
     extract_adapters_from_bax(in_bax, out_adapters)
-    run_consed(out_adapters, out_consensus)
+    #consed.consensus(out_adapters, out_consensus)   # TODO: update

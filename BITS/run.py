@@ -149,69 +149,6 @@ def run_edlib(query,
     return ret
 
 
-def __run_consed(in_seqs, d):
-    import consed
-    d["cons_seq"] = consed.consensus(in_seqs)
-
-
-def _run_consed(in_seqs,
-                only_consensus,
-                variant_vector,
-                variant_graph,
-                variant_fraction,
-                time_limit):
-
-    from multiprocessing import Process, Manager
-
-    # Since Consed is sometimes trapped into infinite loop, watch the process (though it's slow....)
-    m = Manager()
-    d = m.dict()
-    p = Process(target=__run_consed, args=(in_seqs, d))
-    p.start()
-    p.join(time_limit)
-    if p.is_alive():
-        logger.warn(f"Kill freezed Consed process")
-        p.terminate()
-        p.join()
-        return ""
-    else:
-        p.join()
-        if "cons_seq" not in d:
-            logger.warn("Consed did not return")
-            return ""
-        else:
-            return d["cons_seq"]
-
-
-def run_consed(in_seqs,
-               only_consensus=True,
-               variant_vector=False,
-               variant_graph=False,
-               variant_fraction=0.3,
-               n_iteration=1,   # times to iteratively run Consed
-               time_limit=10):   # in sec. to stop running Consed
-
-    for i in range(n_iteration):
-        cons_seq = _run_consed(in_seqs,
-                               only_consensus,
-                               variant_vector,
-                               variant_graph,
-                               variant_fraction,
-                               time_limit)
-
-        # Error in Consed or no more iterations
-        if cons_seq == "" or i == n_iteration - 1:
-            break
-
-        # Update input sequences for Consed with the previous consensus
-        if i == 0:
-            in_seqs = [cons_seq] + in_seqs
-        else:
-            in_seqs = [cons_seq] + in_seqs[1:]
-
-    return cons_seq
-
-
 """
 def run_consed(in_seqs,
                only_consensus=True,
