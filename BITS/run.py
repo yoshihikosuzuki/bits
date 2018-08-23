@@ -115,6 +115,8 @@ def run_edlib(query,
 
     if return_seq and diff < return_seq_diff_th:
         seq = target[start:end] if strand == 0 else revcomp(target[start:end])
+    else:
+        seq = None
 
     if strand == 1:
         start_tmp = start

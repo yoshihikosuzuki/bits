@@ -21,6 +21,21 @@ def run_command(command, show_error_msg=False):
         return out.decode('utf-8')
 
 
+def print_log(process_name):
+    """
+    Simple decolator for watching start and end of a function.
+    """
+
+    def _print_log(func):
+        def wrapper(*args, **kwds):
+            logger.info(f"Starting {process_name} (args={args}, kwds={kwds})")
+            ret = func(*args, **kwds)
+            logger.info(f"Finished {process_name}")
+            return ret
+        return wrapper
+    return _print_log
+
+
 def sge_nize(script,
              job_name="run_script",
              out_log="sge.log",
