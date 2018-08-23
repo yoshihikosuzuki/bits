@@ -1,4 +1,6 @@
 import subprocess
+from multiprocessing import Process
+from multiprocessing.pool import Pool
 from interval import interval
 from logzero import logger
 
@@ -67,6 +69,23 @@ def slurm_nize(script,
                         f"{'#SBATCH --wait' if wait is True else ''}"])
 
     return f"{header}\n\n{script}\n"
+
+
+class NoDaemonProcess(Process):
+    def _get_daemon(self):
+        return False
+
+    def _set_daemon(self, value):
+        pass
+
+    daemon = property(_get_daemon, _set_daemon)
+
+
+class NoDaemonPool(Pool):
+    """
+    Inherited class of Pool so that it runs as a non-daemon process and thus can have child processes.
+    """
+    Process = NoDaemonProcess
 
 
 def make_line(x0, y0, x1, y1, col, width):
