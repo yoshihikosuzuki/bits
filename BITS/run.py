@@ -28,7 +28,7 @@ def revcomp_cigar(cigar):
 
 def run_edlib(query,
               target,
-              mode="global",
+              mode,
               only_diff=False,
               revcomp=False,
               revcomp_pruning_diff_th=0.3,   # at most this diff if true strand
@@ -55,6 +55,7 @@ def run_edlib(query,
     # TODO: implement <revcomp_query> (or <multi_target>?)
     # TODO: implement <count_bad_align>
 
+    assert mode in ["global", "glocal", "local"], f"Invalid mode name: {mode}"
     assert query != "" and target != "", "Input sequence must not be empty!"
 
     import edlib
@@ -63,21 +64,26 @@ def run_edlib(query,
 
     if cyclic:
         target = target * 2
+        if mode != "glocal":
+            logger.warn("Mode was changed to glocal because cyclic is True")
+            mode = "glocal"
+
+    mode = edlib_mode[mode]
 
     strand = 0
     if not revcomp:
-        align = edlib.align(query, target, mode=edlib_mode[mode], task="path")
+        align = edlib.align(query, target, mode=mode, task="path")
         diff = align["editDistance"] / cigar_to_len(align["cigar"])
     else:
         if strand_prior is None or strand_prior == 0:
-            align_f = edlib.align(query, target, mode=edlib_mode[mode], task="path")
+            align_f = edlib.align(query, target, mode=mode, task="path")
             diff_f = align_f["editDistance"] / cigar_to_len(align_f["cigar"])
             if diff_f < revcomp_pruning_diff_th:
                 align = align_f
                 diff = diff_f
             else:
                 target_rc = revcomp(target)
-                align_rc = edlib.align(query, target_rc, mode=edlib_mode[mode], task="path")
+                align_rc = edlib.align(query, target_rc, mode=mode, task="path")
                 diff_rc = align_rc["editDistance"] / cigar_to_len(align_rc["cigar"])
                 if diff_f <= diff_rc:
                     align = align_f
@@ -89,7 +95,7 @@ def run_edlib(query,
                     target = target_rc
         else:
             target_rc = revcomp(target)
-            align_rc = edlib.align(query, target_rc, mode=edlib_mode[mode], task="path")
+            align_rc = edlib.align(query, target_rc, mode=mode, task="path")
             diff_rc = align_rc["editDistance"] / cigar_to_len(align_rc["cigar"])
             if diff_rc < revcomp_pruning_diff_th:
                 strand = 1
@@ -97,7 +103,7 @@ def run_edlib(query,
                 diff = diff_rc
                 target = target_rc
             else:
-                align_f = edlib.align(query, target, mode=edlib_mode[mode], task="path")
+                align_f = edlib.align(query, target, mode=mode, task="path")
                 diff_f = align_f["editDistance"] / cigar_to_len(align_f["cigar"])
                 if diff_f <= diff_rc:
                     align = align_f
