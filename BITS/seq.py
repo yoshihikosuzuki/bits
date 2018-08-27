@@ -6,6 +6,12 @@ import matplotlib.image as img
 from .utils import run_command
 
 
+def load_fasta(in_fname):
+    from Bio.SeqIO import FastaIO
+    with open(in_fname, 'r') as f:
+        return dict(FastaIO.SimpleFastaParser(f))
+
+
 RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 

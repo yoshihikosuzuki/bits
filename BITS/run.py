@@ -113,10 +113,7 @@ def run_edlib(query,
     start, end = align["locations"][0]
     end += 1   # for compatibility with python's slice
 
-    if return_seq and diff < return_seq_diff_th:
-        seq = target[start:end] if strand == 0 else revcomp(target[start:end])
-    else:
-        seq = None
+    seq = target[start:end] if return_seq and diff < return_seq_diff_th else None
 
     if strand == 1:
         start_tmp = start
