@@ -55,6 +55,8 @@ def run_edlib(query,
     # TODO: implement <revcomp_query> (or <multi_target>?)
     # TODO: implement <count_bad_align>
 
+    assert query != "" and target != "", "Input sequence must not be empty!"
+
     import edlib
     if revcomp:
         from .seq import revcomp
