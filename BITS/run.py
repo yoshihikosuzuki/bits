@@ -30,8 +30,8 @@ def run_edlib(query,
               target,
               mode,
               only_diff=False,
-              revcomp=False,
-              revcomp_pruning_diff_th=0.3,   # at most this diff if true strand
+              rc=False,
+              rc_pruning_diff_th=0.3,   # at most this diff if true strand
               strand_prior=None,   # 0 or 1
               cyclic=False,
               return_seq=False,   # in glocal alignment
@@ -57,7 +57,7 @@ def run_edlib(query,
     assert query != "" and target != "", "Input sequence must not be empty!"
 
     import edlib
-    if revcomp:
+    if rc:
         from .seq import revcomp
 
     # NOTE: glocal cyclic can return a sequence shorter than the original one
@@ -71,14 +71,14 @@ def run_edlib(query,
     mode = edlib_mode[mode]
 
     strand = 0
-    if not revcomp:
+    if not rc:
         align = edlib.align(query, target, mode=mode, task="path")
         diff = align["editDistance"] / cigar_to_len(align["cigar"])
     else:
         if strand_prior is None or strand_prior == 0:
             align_f = edlib.align(query, target, mode=mode, task="path")
             diff_f = align_f["editDistance"] / cigar_to_len(align_f["cigar"])
-            if diff_f < revcomp_pruning_diff_th:
+            if diff_f < rc_pruning_diff_th:
                 align = align_f
                 diff = diff_f
             else:
@@ -97,7 +97,7 @@ def run_edlib(query,
             target_rc = revcomp(target)
             align_rc = edlib.align(query, target_rc, mode=mode, task="path")
             diff_rc = align_rc["editDistance"] / cigar_to_len(align_rc["cigar"])
-            if diff_rc < revcomp_pruning_diff_th:
+            if diff_rc < rc_pruning_diff_th:
                 strand = 1
                 align = align_rc
                 diff = diff_rc
@@ -121,25 +121,26 @@ def run_edlib(query,
     flag_cycle = False
     if cyclic:
         half_pos = len(target) // 2
-        if end >= half_pos:
+        if end > half_pos:
             end -= half_pos
             flag_cycle = not flag_cycle
             if start >= half_pos:
                 start -= half_pos
                 flag_cycle = not flag_cycle
-    
+
+        target = target[:half_pos]
+
         if global_cyclic:
             if flag_cycle:
-                n_dist = start - end   # >0: ins, <0: del at boundary
                 end = start
+                target_re = target[start:] + target[:end]
             else:   # adjust so that the alignment is same as global mode
-                n_dist = start + half_pos - end
                 start = 0
                 end = half_pos
-            diff = (align["editDistance"] + n_dist) / (cigar_to_len(align["cigar"]) + n_dist)
-            # TODO: adjust cigar at bounary (deletion case is annoying)
-            
-        target = target[:half_pos]
+                target_re = target[start:end]
+            align_re = run_edlib(query, target_re, "global", return_cigar=True)   # computation time is doubled but this is easy....
+            diff = align_re["diff"]
+            align["cigar"] = align_re["cigar"]
 
     if only_diff:
         return diff
