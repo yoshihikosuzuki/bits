@@ -60,16 +60,13 @@ def run_edlib(query,
     if revcomp:
         from .seq import revcomp
 
+    # NOTE: glocal cyclic can return a sequence shorter than the original one
+    global_cyclic = False
     if cyclic:
         target = target * 2
-
-        # NOTE: Set the mode for edlib as glocal even if it is global,
-        #       but returning sequence differs, so keep the info
         if mode == "global":
             global_cyclic = True
             mode = "glocal"
-        else:
-            global_cyclic = False
 
     mode = edlib_mode[mode]
 
@@ -117,42 +114,51 @@ def run_edlib(query,
                     diff = diff_rc
                     target = target_rc
 
-    if only_diff:
-        return diff
-
     # NOTE: coordinates are on <target>
     start, end = align["locations"][0]
     end += 1   # for compatibility with python's slice
 
+    flag_cycle = False
     if cyclic:
         half_pos = len(target) // 2
-        if start >= half_pos:
-            start -= half_pos
         if end >= half_pos:
             end -= half_pos
+            flag_cycle = not flag_cycle
+            if start >= half_pos:
+                start -= half_pos
+                flag_cycle = not flag_cycle
+    
+        if global_cyclic:
+            if flag_cycle:
+                n_dist = start - end   # >0: ins, <0: del at boundary
+                end = start
+            else:   # adjust so that the alignment is same as global mode
+                n_dist = start + half_pos - end
+                start = 0
+                end = half_pos
+            diff = (align["editDistance"] + n_dist) / (cigar_to_len(align["cigar"]) + n_dist)
+            # TODO: adjust cigar at bounary (deletion case is annoying)
+            
         target = target[:half_pos]
+
+    if only_diff:
+        return diff
 
     if return_seq:
         if diff > return_seq_diff_th:
             seq = None
-        elif global_cyclic:   # TODO: fix diff value and cigar when in/del exist at boundaries
-            # NOTE: true in/dels at the boundaries are all gathered at 3'-end
-            seq = target[start:] + target[:start]
-        else:   # glocal cyclic   # WARNING: this can return sequence shorter than original one
-            if start < end:
-                seq = target[start:end]
-            else:
+        else:
+            if flag_cycle:
                 seq = target[start:] + target[:end]
+            else:
+                seq = target[start:end]
 
     if strand == 1:
         start_tmp = start
         start = len(target) - end
         end = len(target) - start_tmp
 
-    ret = {"start": start, "end": end, "diff": diff}
-
-    if revcomp:
-        ret["strand"] = strand
+    ret = {"start": start, "end": end, "diff": diff, "strand": strand}
 
     if return_seq:
         ret["seq"] = seq
