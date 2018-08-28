@@ -51,9 +51,7 @@ def run_edlib(query,
     NOTE: local alignment using edlib is not recommended.
     """
 
-    # TODO: implement <trim_boundary_ins>?
-    # TODO: implement <revcomp_query> (or <multi_target>?)
-    # TODO: implement <count_bad_align>
+    # TODO: implement <revcomp_query> (or <multi_target>?) and  <count_bad_align>
 
     assert mode in ["global", "glocal", "local"], f"Invalid mode name: {mode}"
     assert query != "" and target != "", "Input sequence must not be empty!"
@@ -64,9 +62,14 @@ def run_edlib(query,
 
     if cyclic:
         target = target * 2
-        if mode != "glocal":
-            logger.warn("Mode was changed to glocal because cyclic is True")
+
+        # NOTE: Set the mode for edlib as glocal even if it is global,
+        #       but returning sequence differs, so keep the info
+        if mode == "global":
+            global_cyclic = True
             mode = "glocal"
+        else:
+            global_cyclic = False
 
     mode = edlib_mode[mode]
 
@@ -121,19 +124,30 @@ def run_edlib(query,
     start, end = align["locations"][0]
     end += 1   # for compatibility with python's slice
 
-    seq = target[start:end] if return_seq and diff < return_seq_diff_th else None
+    if cyclic:
+        half_pos = len(target) // 2
+        if start >= half_pos:
+            start -= half_pos
+        if end >= half_pos:
+            end -= half_pos
+        target = target[:half_pos]
+
+    if return_seq:
+        if diff > return_seq_diff_th:
+            seq = None
+        elif global_cyclic:   # TODO: fix diff value and cigar when in/del exist at boundaries
+            # NOTE: true in/dels at the boundaries are all gathered at 3'-end
+            seq = target[start:] + target[:start]
+        else:   # glocal cyclic   # WARNING: this can return sequence shorter than original one
+            if start < end:
+                seq = target[start:end]
+            else:
+                seq = target[start:] + target[:end]
 
     if strand == 1:
         start_tmp = start
         start = len(target) - end
         end = len(target) - start_tmp
-
-    if cyclic:
-        half_pos = int(len(target) / 2)
-        if start >= half_pos:
-            start -= half_pos
-        if end >= half_pos:
-            end -= half_pos
 
     ret = {"start": start, "end": end, "diff": diff}
 
