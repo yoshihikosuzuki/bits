@@ -104,9 +104,10 @@ class Align:
 
         self.strand = 0   # set as forward (0) by default
 
-    def show(self):
+    def show(self, show_cigar=False):
         logger.info(f"{'revcomp(' if self.strand == 1 else ''}target[{self.start}:{self.end}]{')' if self.strand == 1 else ''} ({self.length} bp, {self.diff:.3} diff)")
-        logger.info(f"{self.cigar.string}")
+        if show_cigar:
+            logger.info(f"{self.cigar.string}")
 
 
 def _find_best_align(query,
