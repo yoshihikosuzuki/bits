@@ -55,7 +55,7 @@ class DotPlot:
         ax.tick_params(labelbottom=False, bottom=False)
         ax.tick_params(labelleft=False, left=False)
         # this assignment and plt.show() are necessary to show only one figure
-        tmp = plt.imshow(img.imread(self.dotplot_fname))
+        plt.imshow(img.imread(self.dotplot_fname))
         plt.show()
 
 
