@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from logzero import logger
 import edlib
 from .seq import revcomp
-from dataclasses import dataclass
+from .utils import run_command
 
 
 @dataclass(repr=False)
@@ -104,9 +105,10 @@ class Align:
 
         self.strand = 0   # set as forward (0) by default
 
-    def show(self):
+    def show(self, show_cigar=False):
         logger.info(f"{'revcomp(' if self.strand == 1 else ''}target[{self.start}:{self.end}]{')' if self.strand == 1 else ''} ({self.length} bp, {self.diff:.3} diff)")
-        logger.info(f"{self.cigar.string}")
+        if show_cigar:
+            logger.info(f"{self.cigar.string}")
 
 
 def _find_best_align(query,
@@ -245,59 +247,25 @@ def run_edlib(query,
     return align
 
 
-"""
-def run_consed(in_seqs,
-               only_consensus=True,
+def run_consed(in_fname,
                out_prefix="out",
                variant_vector=False,
                variant_graph=False,
                variant_fraction=0.3,
-               display_width=100000,
-               tmp_dir="tmp",
-               n_iteration=1,   # times to iteratively run Consed
-               parallel=False):   # avoid file name collision
-    # TODO: implement second stage of consed
+               display_width=1000000):
+    """
+    Only from file to file. No iterations.
+    """
 
-    in_fname = f"{tmp_dir}/consed.seqs"
-    if parallel:
-        in_fname += f".{os.getpid()}"   # TODO: implement parallel mode for not only_consensu mode
-    with open(in_fname, 'w') as f:
-        f.write('\n'.join(in_seqs) + '\n')
+    vv = '-V' if variant_vector else ''
+    vg = f"-G{out_prefix}" if variant_graph else ''
+    vf = f"-t{variant_fraction}" if variant_vector or variant_graph else ''
+    run_command(f"consed {vv} {vg} {vf} -w{display_width} {in_fname} > {out_prefix}.consed")
 
-    if only_consensus:
-        command = f"consed {in_fname}"
-    else:
-        vv = '-V' if variant_vector else ''
-        vg = f"-G{out_prefix}" if variant_graph else ''
-        vf = f"-t{variant_fraction}" if variant_vector or variant_graph else ''
-        command = f"consed {vv} {vg} {vf} -w{display_width} {in_fname}"
 
-    consed_out = run_command(command)   # TODO: maybe here should also be separated into each mode
+def consed_to_consensus(in_consed):
+    run_command(f"awk 'BEGIN {{seq = \"\"}} $0 == \"\" {{exit}} {{seq = seq $0}} END {{print seq}}' {in_consed} > {in_consed}.cons_seq")
 
-    if only_consensus:
-        consed_out = consed_out.strip().split('\n')
-        start_index = 0
-        while consed_out[start_index][0] not in set(['a', 'c', 'g', 't']):
-            start_index += 1
-            if start_index == len(consed_out):
-                logger.error("No consensus sequence in the output")
-                return ''
-        if start_index > 0:
-            logger.debug(f"{consed_out[:start_index]}")
-        return ''.join(consed_out[start_index:])
-    else:
-        with open(f"{out_prefix}.consed", 'w') as f:
-            f.write(f"{consed_out}")
 
-        # Extract consensus sequence
-        command = f"awk 'BEGIN {{seq = \"\"}} $0 == \"\" {{exit}} {{seq = seq $0}} END {{print seq}}' {out_prefix}.consed"
-        consensus_seq = run_command(command).strip()
-        with open(f"{out_prefix}.consensus", 'w') as f:
-            f.write(f">consensus/0/0_{len(consensus_seq)}\n{consensus_seq}\n")
-
-        # Extract variant matrix
-        command = f"sed -e '0,/Variant/d' {out_prefix}.consed | sed -e '1,2d' | awk 'BEGIN {{i = 1}} {{if ($0 == \"\") {{i = 1}} else {{seq[i] = seq[i] $NF; i++}}}} END {{for (i = 1; i <= length(seq); i++) print seq[i]}}'"
-        variant_matrix = run_command(command)
-        with open(f"{out_prefix}.V", 'w') as f:
-            f.write(f"{variant_matrix}")
-"""
+def consed_to_varmat(in_consed):
+    run_command(f"sed -e '0,/Variant/d' {in_consed} | sed -e '1,2d' | awk 'BEGIN {{i = 1}} {{if ($0 == \"\") {{i = 1}} else {{seq[i] = seq[i] $NF; i++}}}} END {{for (i = 1; i <= length(seq); i++) print seq[i]}}' > {in_consed}.V")
