@@ -268,4 +268,4 @@ def consed_to_consensus(in_consed):
 
 
 def consed_to_varmat(in_consed):
-    run_command(f"sed -e '0,/Variant/d' {in_consed} | sed -e '1,2d' | awk 'BEGIN {{i = 1}} {{if ($0 == \"\") {{i = 1}} else {{seq[i] = seq[i] $NF; i++}}}} END {{for (i = 1; i <= length(seq); i++) print seq[i]}}' > {in_consed}.V")
+    run_command(f"grep -v '*' {in_consed} | grep -v 'versus' | sed -e '1,5d' | awk 'BEGIN {{i = 1}} {{if ($0 == \"\") {{i = 1}} else {{seq[i] = seq[i] $NF; i++}}}} END {{for (i = 1; i <= length(seq); i++) print seq[i]}}' > {in_consed}.V")
