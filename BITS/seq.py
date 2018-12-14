@@ -2,8 +2,9 @@ import os
 from logzero import logger
 import matplotlib.pyplot as plt
 import matplotlib.image as img
-
 from .utils import run_command
+
+RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 
 def load_fasta(in_fname):
@@ -12,7 +13,24 @@ def load_fasta(in_fname):
         return dict(FastaIO.SimpleFastaParser(f))
 
 
-RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
+def single_to_multi(s, width):
+    """
+    Cut a single sequence at every <width> bp and return as a list.
+    """
+    return [s[i:i + width] for i in range(0, len(s), width)]
+
+
+def save_fasta(reads, out_fname, sort=True, out_type="single", width=100):
+    """
+    NOTE: <reads> must be a dictionary. If <sort> is True, the headers in <reads> will be sorted.
+    <out_type> defines the existence of newlines within the sequences (by every <width> bp).
+    """
+    assert out_type in set(["single", "multi"]), "<out_type> must be 'single' or 'multi'."
+    with open(out_fname, 'w') as f:
+        for header, seq in sorted(reads.items()) if sort else reads.items():
+            if out_type == "multi":
+                seq = '\n'.join(single_to_multi(seq, width))
+            f.write(f">{header}\n{seq}\n")
 
 
 def revcomp(seq):
