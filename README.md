@@ -1,6 +1,13 @@
 Here I put some reusable bioinformatics-related codes as a python3 package.
 
-## List of the functions
+## Function list
+
+### Add headers for job management system (currently SGE and SLURM) to a script
+
+```bash
+$ python -m BITS.sge_nize <your_script> [options]
+$ python -m BITS.slurm_nize <your_script> [options]
+```
 
 ### `BITS.io`
 
