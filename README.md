@@ -5,7 +5,7 @@ Here I put some reusable (bioinformatics-related) codes as a python3 package.
 ```bash
 $ git clone --recursive https://github.com/yoshihikosuzuki/BITS
 $ cd BITS
-$ python3 setup.py install
+$ python setup.py install
 ```
 
 
