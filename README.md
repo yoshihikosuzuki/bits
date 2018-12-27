@@ -1,10 +1,17 @@
 Here I put some reusable (bioinformatics-related) codes as a python3 package.
 
+## 0. Installation
+
+```bash
+$ git clone --recursive https://github.com/yoshihikosuzuki/BITS
+$ cd BITS
+$ python3 setup.py install
+```
 
 
-## Command-line functions
+## 1. Command-line functions
 
-You can use these functions from the bash shell as follows:
+You can use these functions from a shell as follows:
 
 ```bash
 $ python -m BITS.<module_name> [arguments]
@@ -23,7 +30,7 @@ $ python -m BITS.slurm_nize <your_script_file> [options]
 
 In `[options]`, you can specify the arguments in the table below:
 
-| option name |           default value            |     note     |
+| Option name |           Default value            |     Note     |
 | :---------: | :--------------------------------: | :----------: |
 |  job_name   |            "run_script"            |              |
 |   out_log   | "sge.log" (SGE)<br>"sbatch_stdout" |              |
@@ -42,7 +49,7 @@ $ python -m BITS.sge_nize my_script.sh job_name="run_my_script" n_core=12 wait=F
 
 
 
-## Python-module functions
+## 2. Python-module functions and classes
 
 You can call these functions in a python script as follows:
 
