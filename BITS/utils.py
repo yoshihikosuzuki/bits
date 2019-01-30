@@ -1,14 +1,28 @@
-import subprocess
 from multiprocessing import Process
 from multiprocessing.pool import Pool
-from interval import interval
 from logzero import logger
+
+
+def load_pickle(pkl_fname):
+    import pickle.load
+
+    with open(pkl_fname, 'rb') as f:
+        return pickle.load(f)
+
+
+def save_pickle(obj, pkl_fname):
+    import pickle.dump
+
+    with open(pkl_fname, 'wb') as f:
+        pickle.dump(obj, f)
 
 
 def run_command(command, show_error_msg=False):
     """
     General-purpose command executer.
     """
+
+    import subprocess
 
     try:
         out = subprocess.check_output(command, shell=True)
@@ -133,6 +147,8 @@ def subtract_interval(a_interval, b_interval, length_threshold=0):
     Afterwards, remove remaining intervals shorter than <length_threshold>.
     """
     
+    from interval import interval
+
     ret_interval = interval()
     intersection = a_interval & b_interval
     a_index = 0
