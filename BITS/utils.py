@@ -4,14 +4,14 @@ from logzero import logger
 
 
 def load_pickle(pkl_fname):
-    import pickle.load
+    import pickle
 
     with open(pkl_fname, 'rb') as f:
         return pickle.load(f)
 
 
 def save_pickle(obj, pkl_fname):
-    import pickle.dump
+    import pickle
 
     with open(pkl_fname, 'wb') as f:
         pickle.dump(obj, f)

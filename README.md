@@ -64,6 +64,8 @@ To see the details of the functions, use the help command of IPython (`<function
 
 |       Name        |   Type   |                         description                          |
 | :---------------: | :------: | :----------------------------------------------------------: |
+|    load_pickle    | function |                                                              |
+|    save_pickle    | function |                                                              |
 |    run_command    | function |              General-purpose command executer.               |
 |     print_log     | function |  Simple decolator for watching start and end of a function.  |
 |     sge_nize      | function |                 Add headers for qsub of SGE.                 |
