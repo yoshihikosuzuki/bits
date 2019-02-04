@@ -35,14 +35,15 @@ def run_command(command, show_error_msg=False):
         return out.decode('utf-8')
 
 
-def print_log(process_name):
+def print_log(process_name, show_args=True):
     """
     Simple decolator for watching start and end of a function.
     """
 
     def _print_log(func):
         def wrapper(*args, **kwds):
-            logger.info(f"Starting {process_name} (args={args}, kwds={kwds})")
+            args_info = f"(args={args}, kwds={kwds})" if show_args else ""
+            logger.info(f"Starting {process_name} {args_info}")
             ret = func(*args, **kwds)
             logger.info(f"Finished {process_name}")
             return ret
