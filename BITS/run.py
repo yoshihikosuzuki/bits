@@ -248,7 +248,7 @@ def run_edlib(query,
 
 
 def run_consed(in_fname,
-               out_prefix="out",
+               out_fname="out.consed",
                variant_vector=False,
                variant_graph=False,
                variant_fraction=0.3,
@@ -258,9 +258,9 @@ def run_consed(in_fname,
     """
 
     vv = '-V' if variant_vector else ''
-    vg = f"-G{out_prefix}" if variant_graph else ''
+    vg = f"-G{out_fname}" if variant_graph else ''
     vf = f"-t{variant_fraction}" if variant_vector or variant_graph else ''
-    run_command(f"consed {vv} {vg} {vf} -w{display_width} {in_fname} > {out_prefix}.consed")
+    run_command(f"consed {vv} {vg} {vf} -w{display_width} {in_fname} > {out_fname}")
 
 
 def consed_to_consensus(in_consed):
