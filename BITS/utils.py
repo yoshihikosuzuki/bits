@@ -118,7 +118,7 @@ class NoDaemonPool(Pool):
     Process = NoDaemonProcess
 
 
-def make_line(x0, y0, x1, y1, col, width):
+def make_line(x0, y0, x1, y1, col='black', width=1, layer='below'):
     """
     For Plotly.
     Create a line-shape object for Plotly.
@@ -126,7 +126,8 @@ def make_line(x0, y0, x1, y1, col, width):
 
     return {'type': 'line', 'xref': 'x', 'yref': 'y',
             'x0': x0, 'y0': y0, 'x1': x1, 'y1': y1,
-            'line': {'color': col, 'width': width}}
+            'line': {'color': col, 'width': width},
+            'layer': layer}
 
 
 def interval_len(intvls):
