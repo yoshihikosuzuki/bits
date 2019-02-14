@@ -10,4 +10,4 @@ $ python setup.py install
 
 ## How to use
 
-See [Jupyter Notebook]()
+See [Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb).
