@@ -13,7 +13,7 @@ def load_fasta(in_fname):
         return dict(FastaIO.SimpleFastaParser(f))
 
 
-def single_to_multi(s, width):
+def single_to_multi(s, width=100):
     """
     Cut a single sequence at every <width> bp and return as a list.
     """
