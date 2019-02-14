@@ -176,11 +176,12 @@ def subtract_interval(a, b, th_length=0):
         ai += 1
 
     while ai < an:   # remaining intervals
-        ret |= a[ai]
+        al, ar = a[ai]   # a[ai] is Component, not interval
+        ret |= interval([al, ar])
         ai += 1
 
     if th_length == 0:
         return ret
     else:
         # Remove intervals shorter than <th_length>
-        return interval([r for r in ret.components if interval_len(r) >= th_length])
+        return interval(*[(i[0][0], i[0][1]) for i in ret.components if interval_len(i) >= th_length])
