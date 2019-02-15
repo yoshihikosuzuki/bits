@@ -41,6 +41,16 @@ def revcomp(seq):
     return ''.join([RC_MAP[c] for c in seq[::-1]])
 
 
+def homopolymer_compression(seq):
+    ret = ""
+    prev = ""
+    for s in seq:
+        if s != prev:
+            ret += s
+        prev = s
+    return ret
+
+
 class DotPlot:
     def __init__(self, out_dir, gepard_command):
         if not os.path.isdir(out_dir):
