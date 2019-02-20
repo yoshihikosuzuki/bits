@@ -102,7 +102,7 @@ def slurm_nize(script,
                         f"#SBATCH --partition={partition}",
                         f"{'#SBATCH --wait' if wait is True else ''}"])
     if depend is not None:
-        header += f"\n#DBATCH -d {depend}"
+        header += f"\n#SBATCH -d {depend}"
 
     return f"{header}\n\n{script}\n"
 
