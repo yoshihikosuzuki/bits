@@ -55,7 +55,8 @@ def sge_nize(script,
              job_name="run_script",
              out_log="sge.log",
              n_core=1,
-             wait=True):
+             depend=None,
+             wait=False):
     """
     Add headers for qsub of SGE.
     """
@@ -69,6 +70,8 @@ def sge_nize(script,
                         f"#$ -V",
                         f"#$ -pe smp {n_core}",
                         f"#$ -sync {'y' if wait is True else 'n'}"])
+    if depend is not None:
+        header += f"\n#$ -hold_jid {depend}"
 
     return f"{header}\n\n{script}\n"
 
@@ -81,7 +84,8 @@ def slurm_nize(script,
                time_limit="24:00:00",
                mem_per_cpu=1024,
                partition="batch",
-               wait=True):
+               depend=None,
+               wait=False):
     """
     Add headers for sbatch of SLURM.
     """
@@ -97,6 +101,8 @@ def slurm_nize(script,
                         f"#SBATCH --mem-per-cpu={mem_per_cpu}",
                         f"#SBATCH --partition={partition}",
                         f"{'#SBATCH --wait' if wait is True else ''}"])
+    if depend is not None:
+        header += f"\n#DBATCH -d {depend}"
 
     return f"{header}\n\n{script}\n"
 
