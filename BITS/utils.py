@@ -56,6 +56,7 @@ def sge_nize(script,
              out_log="sge_stdout",
              err_log="sge_stderr",
              n_core=1,
+             queue=None,
              time_limit=None,   # NOTE: not supported yet
              mem_limit=None,   # NOTE: not supported yet
              depend=[],
@@ -67,39 +68,18 @@ def sge_nize(script,
     header = '\n'.join([f"#!/bin/bash",
                         f"#$ -N {job_name}",
                         f"#$ -o {out_log}",
-                        f"#$ -j y",
+                        f"#$ -e {err_log}",
                         f"#$ -S /bin/bash",
                         f"#$ -cwd",
                         f"#$ -V",
                         f"#$ -pe smp {n_core}",
-                        f"#$ -sync {'y' if wait is True else 'n'}"])
-    if depend is not None:
-        header += f"\n#$ -hold_jid {depend}"
+                        f"#$ -sync {'y' if wait else 'n'}"])
+    if queue is not None:
+        header += f"\n#$ -q {queue}"
+    if len(depend) > 1:
+        header += f"\n#$ -hold_jid {','.join(depend)}"
 
     return f"{header}\n\n{script}\n"
-
-
-def submit_sge(script,
-               out_fname,
-               job_name="run_script",
-               out_log="sge.log",
-               n_core=1,
-               depend=[],
-               wait=False,
-               submit_command="qsub"):
-    """
-    Submit a script as a SGE job with <submit_command> after adding headers with specified options.
-    """
-
-    with open(out_fname, 'w') as f:
-        f.write(sge_nize(script,
-                         job_name,
-                         out_log,
-                         n_core,
-                         depend,
-                         wait))
-
-    return run_command(f"{submit_command} {out_fname}").split()[2]   # job ID
 
 
 def slurm_nize(script,
@@ -107,10 +87,10 @@ def slurm_nize(script,
                out_log="sbatch_stdout",
                err_log="sbatch_stderr",
                n_core=1,
-               time_limit="24:00:00",
-               mem_per_cpu=1024,
-               partition="batch",
-               depend=None,
+               partition=None,
+               time_limit=None,   # e.g. "24:00:00"
+               mem_limit=None,   # in MB
+               depend=[],
                wait=False):
     """
     Add headers for sbatch of SLURM.
@@ -123,29 +103,52 @@ def slurm_nize(script,
                         f"#SBATCH -n 1",
                         f"#SBATCH -N 1",
                         f"#SBATCH -c {n_core}",
-                        f"#SBATCH -t {time_limit}",
-                        f"#SBATCH --mem-per-cpu={mem_per_cpu}",
-                        f"#SBATCH --partition={partition}",
                         f"{'#SBATCH --wait' if wait is True else ''}"])
-    if depend is not None:
-        header += f"\n#SBATCH -d {depend}"
+    if partition is not None:
+        header += f"\n#SBATCH -p {partition}"
+    if time_limit is not None:
+        header += f"\n#SBATCH -t {time_limit}"
+    if mem_limit is not None:
+        header += f"\n#SBATCH --mem-per-cpu={mem_limit}"
+    if len(depend) > 1:
+        header += f"\n#SBATCH -d afterany:{','.join(depend)}"
 
     return f"{header}\n\n{script}\n"
 
 
-def submit_slurm(script,
-                 job_name="run_script",
-                 out_log="sbatch_stdout",
-                 err_log="sbatch_stderr",
-                 n_core=1,
-                 time_limit="24:00:00",
-                 mem_per_cpu=1024,
-                 partition="batch",
-                 depend=None,
-                 wait=False):
+def submit_job(script,
+               out_fname,
+               scheduler,
+               submit_command,
+               job_name="run_script",
+               out_log="log.stdout",
+               err_log="log.stderr",
+               n_core=1,
+               queue_or_partition=None,
+               time_limit=None,
+               mem_limit=None,
+               depend=[],
+               wait=False):
     """
-    Add headers for sbatch of SLURM.
+    Submit a script with <scheduler> after adding headers with specified options.
     """
+
+    assert scheduler in ("sge", "slurm"), "Not supported scheduler"
+    script = (sge_nize if scheduler == "sge"
+              else slurm_nize)(script,
+                               job_name,
+                               out_log,
+                               err_log,
+                               n_core,
+                               queue_or_partition,
+                               time_limit,
+                               mem_limit,
+                               depend,
+                               wait)
+    with open(out_fname, 'w') as f:
+        f.write(script)
+    ret = run_command(f"{submit_command} {out_fname}")
+    return ret.split()[2] if scheduler == "sge" else ret.split()[-1]
 
 
 class NoDaemonProcess(Process):
