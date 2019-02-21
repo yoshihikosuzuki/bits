@@ -56,7 +56,7 @@ def sge_nize(script,
              out_log="sge_stdout",
              err_log="sge_stderr",
              n_core=1,
-             queue=None,
+             queue_or_partition=None,
              time_limit=None,   # NOTE: not supported yet
              mem_limit=None,   # NOTE: not supported yet
              depend=[],
@@ -74,8 +74,8 @@ def sge_nize(script,
                         f"#$ -V",
                         f"#$ -pe smp {n_core}",
                         f"#$ -sync {'y' if wait else 'n'}"])
-    if queue is not None:
-        header += f"\n#$ -q {queue}"
+    if queue_or_partition is not None:
+        header += f"\n#$ -q {queue_or_partition}"
     if len(depend) > 1:
         header += f"\n#$ -hold_jid {','.join(depend)}"
 
@@ -87,7 +87,7 @@ def slurm_nize(script,
                out_log="sbatch_stdout",
                err_log="sbatch_stderr",
                n_core=1,
-               partition=None,
+               queue_or_partition=None,
                time_limit=None,   # e.g. "24:00:00"
                mem_limit=None,   # in MB
                depend=[],
@@ -104,8 +104,8 @@ def slurm_nize(script,
                         f"#SBATCH -N 1",
                         f"#SBATCH -c {n_core}",
                         f"{'#SBATCH --wait' if wait is True else ''}"])
-    if partition is not None:
-        header += f"\n#SBATCH -p {partition}"
+    if queue_or_partition is not None:
+        header += f"\n#SBATCH -p {queue_or_partition}"
     if time_limit is not None:
         header += f"\n#SBATCH -t {time_limit}"
     if mem_limit is not None:
