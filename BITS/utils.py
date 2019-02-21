@@ -53,9 +53,12 @@ def print_log(process_name, show_args=True):
 
 def sge_nize(script,
              job_name="run_script",
-             out_log="sge.log",
+             out_log="sge_stdout",
+             err_log="sge_stderr",
              n_core=1,
-             depend=None,
+             time_limit=None,   # NOTE: not supported yet
+             mem_limit=None,   # NOTE: not supported yet
+             depend=[],
              wait=False):
     """
     Add headers for qsub of SGE.
@@ -74,6 +77,29 @@ def sge_nize(script,
         header += f"\n#$ -hold_jid {depend}"
 
     return f"{header}\n\n{script}\n"
+
+
+def submit_sge(script,
+               out_fname,
+               job_name="run_script",
+               out_log="sge.log",
+               n_core=1,
+               depend=[],
+               wait=False,
+               submit_command="qsub"):
+    """
+    Submit a script as a SGE job with <submit_command> after adding headers with specified options.
+    """
+
+    with open(out_fname, 'w') as f:
+        f.write(sge_nize(script,
+                         job_name,
+                         out_log,
+                         n_core,
+                         depend,
+                         wait))
+
+    return run_command(f"{submit_command} {out_fname}").split()[2]   # job ID
 
 
 def slurm_nize(script,
@@ -105,6 +131,21 @@ def slurm_nize(script,
         header += f"\n#SBATCH -d {depend}"
 
     return f"{header}\n\n{script}\n"
+
+
+def submit_slurm(script,
+                 job_name="run_script",
+                 out_log="sbatch_stdout",
+                 err_log="sbatch_stderr",
+                 n_core=1,
+                 time_limit="24:00:00",
+                 mem_per_cpu=1024,
+                 partition="batch",
+                 depend=None,
+                 wait=False):
+    """
+    Add headers for sbatch of SLURM.
+    """
 
 
 class NoDaemonProcess(Process):
