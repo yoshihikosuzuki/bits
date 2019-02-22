@@ -161,7 +161,6 @@ def run_edlib(query,
               strand_prior=0,   # 0 or 1
               cyclic=False,
               return_seq=False,   # in glocal alignment
-              return_seq_diff_th=1.0,   # remove distant sequences
               swap_cigar=False):
     """
     Perform 1 vs 1 pairwise sequence alignment using edlib.
@@ -228,13 +227,10 @@ def run_edlib(query,
         return align.diff
 
     if return_seq:
-        if align.diff > return_seq_diff_th:
-            align.seq = None
+        if flag_cycle:
+            align.seq = target[align.start:] + target[:align.end]
         else:
-            if flag_cycle:
-                align.seq = target[align.start:] + target[:align.end]
-            else:
-                align.seq = target[align.start:align.end]
+            align.seq = target[align.start:align.end]
 
     if align.strand == 1:
         tmp = align.start

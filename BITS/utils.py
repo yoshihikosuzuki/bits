@@ -103,13 +103,13 @@ def slurm_nize(script,
                         f"#SBATCH -n 1",
                         f"#SBATCH -N 1",
                         f"#SBATCH -c {n_core}",
-                        f"{'#SBATCH --wait' if wait is True else ''}"])
+                        f"{'#SBATCH --wait' if wait else ''}"])
     if queue_or_partition is not None:
         header += f"\n#SBATCH -p {queue_or_partition}"
     if time_limit is not None:
         header += f"\n#SBATCH -t {time_limit}"
     if mem_limit is not None:
-        header += f"\n#SBATCH --mem-per-cpu={mem_limit}"
+        header += f"\n#SBATCH --mem={mem_limit}"
     if len(depend) > 1:
         header += f"\n#SBATCH -d afterany:{','.join(depend)}"
 
