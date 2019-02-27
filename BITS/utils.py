@@ -14,7 +14,7 @@ def save_pickle(obj, pkl_fname):
     import pickle
 
     with open(pkl_fname, 'wb') as f:
-        pickle.dump(obj, f)
+        pickle.dump(obj, f, protocol=4)
 
 
 def run_command(command, show_error_msg=False):
