@@ -1,13 +1,16 @@
-import os
+import os.path.join
+from dataclasses import dataclass
 from logzero import logger
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from .utils import run_command
 
-RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
-
 
 def load_fasta(in_fname):
+    """
+    Load a fasta file as a dictionary of {header: seq}.
+    """
+
     from Bio.SeqIO import FastaIO
     with open(in_fname, 'r') as f:
         return dict(FastaIO.SimpleFastaParser(f))
@@ -17,14 +20,17 @@ def single_to_multi(s, width=100):
     """
     Cut a single sequence at every <width> bp and return as a list.
     """
+
     return [s[i:i + width] for i in range(0, len(s), width)]
 
 
 def save_fasta(reads, out_fname, sort=True, out_type="single", width=100):
     """
-    NOTE: <reads> must be a dictionary. If <sort> is True, the headers in <reads> will be sorted.
+    NOTE: <reads> must be a dictionary.
+    If <sort> is True, the headers in <reads> will be sorted.
     <out_type> defines the existence of newlines within the sequences (by every <width> bp).
     """
+
     assert out_type in set(["single", "multi"]), "<out_type> must be 'single' or 'multi'."
     with open(out_fname, 'w') as f:
         for header, seq in sorted(reads.items()) if sort else reads.items():
@@ -33,11 +39,9 @@ def save_fasta(reads, out_fname, sort=True, out_type="single", width=100):
             f.write(f">{header}\n{seq}\n")
 
 
-def revcomp(seq):
-    """
-    Return the reverse complement of the given sequence.
-    """
+RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
+def revcomp(seq):
     return ''.join([RC_MAP[c] for c in seq[::-1]])
 
 
@@ -51,60 +55,35 @@ def homopolymer_compression(seq):
     return ret
 
 
+@dataclass(repr=False, eq=False)
 class DotPlot:
-    def __init__(self, out_dir, gepard_command):
-        if not os.path.isdir(out_dir):
-            run_command(f"mkdir {out_dir}")
+    out_dir: str
+    gepard_command: str
 
-        self.out_dir = out_dir   # temporary directory
-        self.gepard_command = gepard_command
-        self.a_fname = os.path.join(out_dir, "a.fasta")
-        self.b_fname = os.path.join(out_dir, "b.fasta")
-        self.dotplot_fname = os.path.join(out_dir, "dotplot.png")
+    def __post_init__(self):
+        run_command(f"mkdir -p {self.out_dir}")
+        self.a_fname = os.path.join(self.out_dir, "a.fasta")
+        self.b_fname = os.path.join(self.out_dir, "b.fasta")
+        self.dotplot_fname = os.path.join(self.out_dir, "dotplot.png")
 
     def plot(self, a, b, a_name="a", b_name="b"):
         """
         Generate a dot plot of the given two sequences.
         """
 
-        def write_fasta(seq, seq_name, fname):
-            with open(fname, 'w') as f:
-                f.write(f">{seq_name}/0/0_{len(seq)}\n{seq}\n")
+        save_fasta({f"{a_name}/0/0_{len(a)}": a}, self.a_fname)
+        save_fasta({f"{b_name}/0/0_{len(b)}": b}, self.b_fname)
 
-        write_fasta(a, a_name, self.a_fname)
-        write_fasta(b, b_name, self.b_fname)
-    
         # Calculate dot plot
-        command = f"unset DISPLAY; {self.gepard_command} -seq1 {self.a_fname} -seq2 {self.b_fname} -outfile {self.dotplot_fname}"
-        run_command(command)
+        run_command(' '.join([f"unset DISPLAY;",
+                              f"{self.gepard_command}",
+                              f"-seq1 {self.a_fname}",
+                              f"-seq2 {self.b_fname}",
+                              f"-outfile {self.dotplot_fname}"]))
     
         # Show dot plot
         fig, ax = plt.subplots(figsize=(11, 11))
         ax.tick_params(labelbottom=False, bottom=False)
         ax.tick_params(labelleft=False, left=False)
-        # this assignment and plt.show() are necessary to show only one figure
         plt.imshow(img.imread(self.dotplot_fname))
         plt.show()
-
-
-def extract_adapters_from_bax(in_bax, out_adapters):
-    """
-    Extract all adapter sequences detected in PacBio reads
-    """
-    
-    from pbcore.io import BasH5Reader
-
-    with open(out_adapters, 'w') as out:
-        with BasH5Reader(in_bax) as f:
-            for r in f:
-                for a in r.adapters:
-                    out.write(a.basecalls() + '\n')
-
-
-def consensus_adaptors(in_bax, out_adapters='adapters', out_consensus='adapter.consensus.fasta'):
-    """
-    Extract all adapter sequences from *.bax.h5, and then take consensus of them.
-    """
-
-    extract_adapters_from_bax(in_bax, out_adapters)
-    #consed.consensus(out_adapters, out_consensus)   # TODO: update
