@@ -35,6 +35,15 @@ def run_command(command, show_error_msg=True):
         return out.decode('utf-8')
 
 
+def debug_mode(yes):
+    import logging
+    import logzero
+    if yes:
+        logzero.loglevel(logging.DEBUG)
+    else:
+        logzero.loglevel(logging.INFO)
+
+
 def print_log(process_name, show_args=True):
     """
     Simple decolator for watching start and end of a function.
