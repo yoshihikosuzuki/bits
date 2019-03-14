@@ -1,4 +1,4 @@
-import os.path.join
+from os.path import join
 from dataclasses import dataclass
 from logzero import logger
 import matplotlib.pyplot as plt
@@ -62,9 +62,9 @@ class DotPlot:
 
     def __post_init__(self):
         run_command(f"mkdir -p {self.out_dir}")
-        self.a_fname = os.path.join(self.out_dir, "a.fasta")
-        self.b_fname = os.path.join(self.out_dir, "b.fasta")
-        self.dotplot_fname = os.path.join(self.out_dir, "dotplot.png")
+        self.a_fname = join(self.out_dir, "a.fasta")
+        self.b_fname = join(self.out_dir, "b.fasta")
+        self.dotplot_fname = join(self.out_dir, "dotplot.png")
 
     def plot(self, a, b, a_name="a", b_name="b"):
         """

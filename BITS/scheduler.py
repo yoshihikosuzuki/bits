@@ -62,7 +62,7 @@ class Scheduler:
             header += f"\n#$ -l h_cpu={time_limit}"
         if mem_limit is not None:
             header += f"\n#$ -l mem_total={mem_limit}"
-        if len(depend) > 1:
+        if len(depend) != 0:
             header += f"\n#$ -hold_jid {','.join(depend)}"
         return f"{header}\n\n{script}\n"
 
@@ -86,7 +86,7 @@ class Scheduler:
             header += f"\n#$ -e {self.err_log}",
         if self.queue_name is not None:
             header += f"\n#$ -q {self.queue_name}"
-        if len(depend) > 1:
+        if len(depend) != 0:
             header += f"\n#SBATCH -d afterany:{','.join(depend)}"
         if wait:
             header += f"\n#SBATCH --wait"
