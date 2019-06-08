@@ -1,20 +1,18 @@
-import subprocess
+import subprocess as sp
 from multiprocessing import Process
 from multiprocessing.pool import Pool
 from logzero import logger
 
 
-def run_command(command, show_error_msg=True):
+def run_command(command):
     """
-    General-purpose command executer.
+    General-purpose shell command executer.
     """
-
     try:
-        out = subprocess.check_output(command, shell=True)
-    except subprocess.CalledProcessError as proc:
-        logger.warn(f"An error occured while command execution")
-        if show_error_msg:
-            logger.exception(proc)
+        out = sp.check_output(command, shell=True)
+    except sp.CalledProcessError as proc:
+        logger.warn(f"Error raised during: {command}")
+        logger.exception(proc)
         return proc.output.decode('utf-8')
     else:
         return out.decode('utf-8')
@@ -32,6 +30,6 @@ class NoDaemonProcess(Process):
 
 class NoDaemonPool(Pool):
     """
-    Inherited class of Pool so that it runs as a non-daemon process and thus can have child processes.
+    Inherited class of Pool running as a non-daemon process. It can have child processes.
     """
     Process = NoDaemonProcess

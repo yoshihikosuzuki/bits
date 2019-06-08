@@ -1,32 +1,31 @@
-# Utilities for pyinterval package
+"""
+Utilities for pyinterval package [https://github.com/taschini/pyinterval].
+"""
+
 from interval import interval
 
 
-def interval_len(intvls):
+def intvl_len(intvls):
     """
-    Calculate the sum of the length of the intervals in <intvls>.
-    NOTE: It is assumed that <intvls> is INTEGER interval object.
+    Calculate the sum of the interval lengths of <intvls>.
+    <intvls> must consist of INTEGER intervals whose boundaries are inclusive.
     """
-
     return sum([i[0][1] - i[0][0] + 1 for i in intvls.components])
 
 
-def subtract_interval(a, b, th_length=0):
+def subtract_intvl(a_intvl, b_intvl, th_length=0):
     """
-    Calculate A - B as interval objects and then remove remaining intervals shorter than <th_length>.
-    NOTE: It is assumed that <a> and <b> are INTEGER interval objects.
+    Calculate <a_intvl> - <b_intvl> as interval.
+    <intvls> must consist of INTEGER intervals whose boundaries are inclusive.
     """
-    
     ret = interval()
-    ai, bi = 0, 0
-    an, bn = len(a), len(b)
-
+    ai, bi, an, bn = 0, 0, len(a_intvl), len(b_intvl)
     while ai < an and bi < bn:
-        al, ar = a[ai]
-        while bi < bn and b[bi][1] < al:   # skip non-involved intervals
+        al, ar = a_intvl[ai]
+        while bi < bn and b_intvl[bi][1] < al:   # skip non-involved intervals
             bi += 1
-        while bi < bn and b[bi][0] < ar:
-            bl, br = b[bi]
+        while bi < bn and b_intvl[bi][0] < ar:
+            bl, br = b_intvl[bi]
             if ar < bl:   # no overlap
                 break
             if al < bl:
@@ -41,9 +40,15 @@ def subtract_interval(a, b, th_length=0):
             ret |= interval([al, ar])
         ai += 1
     while ai < an:   # remaining intervals
-        al, ar = a[ai]
+        al, ar = a_intvl[ai]
         ret |= interval([al, ar])
         ai += 1
+    return ret
 
-    # Remove intervals shorter than <th_length>
-    return interval(*[(i[0][0], i[0][1]) for i in ret.components if interval_len(i) >= th_length])
+
+def filter_short_intvls(intvls, min_len):
+    """
+    Filter out intervals in <intvls> shorter than <min_len>.
+    <intvls> must consist of INTEGER intervals whose boundaries are inclusive.
+    """
+    return interval(*[i for i in intvls if intvl_len(i) >= min_len])
