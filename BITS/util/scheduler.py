@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from logzero import logger
-from .utils import run_command
+from .proc import run_command
 
 
 @dataclass(repr=False, eq=False)

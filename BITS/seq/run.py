@@ -1,93 +1,8 @@
 from dataclasses import dataclass
 from logzero import logger
 import edlib
-from .seq import revcomp
-from .utils import run_command
-
-
-@dataclass(repr=False)
-class Cigar:
-    string: str
-
-    def iter(self):
-        """
-        Generator of a series of tuples (num. of bases, operator).
-        """
-
-        length = ""
-        for c in self.string:
-            if c == '=' or c == 'D' or c == 'I' or c == 'X' or c == 'N':
-                yield (int(length), c)
-                length = ""
-            else:
-                length += c
-
-    @property
-    def alignment_len(self):
-        """
-        Alignment length including gaps and masked regions.
-        """
-
-        return sum([l for l, op in self.iter()])
-
-    def reversed(self):
-        """
-        Just reverse CIGAR without swapping in/del. Used for reverse complement.
-        """
-
-        return ''.join(reversed([f"{l}{op}" for l, op in self.iter()]))
-
-    def flatten(self):
-        """
-        Convert CIGAR to a sequence of operations. Used for masking some specific intervals.
-        """
-
-        return FlattenCigar(''.join([op for l, op in self.iter() for i in range(l)]))
-
-    def mask_intvl(self, intvl, ignore_op='D'):
-        # TODO: how to do about I/D/X around intervals' boundaries
-
-        cigar_f = self.flatten()
-    
-        starts = [i[0] for i in intvl]
-        ends = [i[1] for i in intvl]
-        index = 0
-        pos = 0
-        for i, c in enumerate(cigar_f):
-            if index >= len(starts):
-                break
-            if i != 0 and c != ignore_op:
-                pos += 1
-            if pos > ends[index]:
-                index += 1
-            if index < len(starts) and starts[index] <= pos and pos <= ends[index]:   # NOTE: end-inclusive
-                cigar_f[i] = 'N'
-
-        return cigar_f.unflatten()
-
-
-@dataclass(repr=False)
-class FlattenCigar:
-    string: str
-
-    def unflatten(self):
-        """
-        Convert a series of oprations to a normal CIGAR string.
-        """
-
-        cigar = ""
-        count = 0
-        prev_c = self.string[0]
-        for c in self.string:
-            if c == prev_c:
-                count += 1
-            else:
-                cigar += f"{count}{prev_c}"
-                count = 1
-                prev_c = c
-        cigar += f"{count}{prev_c}"
-        return Cigar(cigar)
-
+from .core import revcomp, Cigar
+from BITS.util import run_command
 
 edlib_mode = {"global": "NW", "glocal": "HW", "local": "SHW"}
 
@@ -106,9 +21,9 @@ class Align:
         self.strand = 0   # set as forward (0) by default
 
     def show(self, show_cigar=False):
-        logger.info(f"{'revcomp(' if self.strand == 1 else ''}target[{self.start}:{self.end}]{')' if self.strand == 1 else ''} ({self.length} bp, {self.diff:.3} diff)")
+        logger.debug(f"{'revcomp(' if self.strand == 1 else ''}target[{self.start}:{self.end}]{')' if self.strand == 1 else ''} ({self.length} bp, {self.diff:.3} diff)")
         if show_cigar:
-            logger.info(f"{self.cigar.string}")
+            logger.debug(f"{self.cigar.string}")
 
 
 def _find_best_align(query,

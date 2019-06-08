@@ -1,6 +1,4 @@
-import BITS.utils
+import BITS.util
 import BITS.seq
-import BITS.run
+import BITS.clustering
 import BITS.plot
-import BITS.scheduler
-import BITS.interval

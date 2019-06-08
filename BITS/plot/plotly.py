@@ -31,7 +31,7 @@ def show_plot(trace_list, layout, out_fname=None):
         py.iplot(fig, filename=out_fname)
 
 
-def generate_scatter(x, y, text=None, marker_size=5):
+def generate_scatter(x, y, text=None, marker_size=5, name=None):
     trace = go.Scatter(x=x,
                        y=y,
                        mode="markers",
@@ -39,6 +39,8 @@ def generate_scatter(x, y, text=None, marker_size=5):
     if text is not None:
         trace["text"] = text
         trace["hoverinfo"] = "text"
+    if name is not None:
+        trace["name"] = name
 
     return trace
 
