@@ -1,19 +1,12 @@
 from os.path import join
 from dataclasses import dataclass
-from logzero import logger
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from BITS.util.proc import run_command
+from .io import save_fasta
 
 RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
-
-
-def single_to_multi(seq, width=100):
-    """
-    Cut a single sequence at every <width> bp and return as a list.
-    """
-
-    return [seq[i:i + width] for i in range(0, len(seq), width)]
+CIGAR_CHAR = set(['=', 'D', 'I', 'X', 'N'])
 
 
 def revcomp(seq):
@@ -34,42 +27,46 @@ def compress_homopolymer(seq):
 class Cigar:
     string: str
 
-    def iter(self):
-        """
-        Generator of a series of tuples (num. of bases, operator).
-        """
+    def __str__(self):
+        return self.string
 
-        length = ""
+    def __iter__(self):
+        self._objs = []   # list of the tuples (count, cigar) in <self.string>
+        count = ""
         for c in self.string:
-            if c == '=' or c == 'D' or c == 'I' or c == 'X' or c == 'N':
-                yield (int(length), c)
-                length = ""
+            if c in CIGAR_CHAR:
+                self._objs.append((int(count), c))
+                count = ""
             else:
-                length += c
+                count += c
+        self._i = 0   # index of <self._objs>
+        return self
+
+    def __next__(self):
+        if self._i == len(self._objs):
+            raise StopIteration()
+        ret = self._objs[self._i]
+        self._i += 1
+        return ret
 
     @property
     def alignment_len(self):
-        """
-        Alignment length including gaps and masked regions.
-        """
+        """Alignment length including gaps and masked regions."""
+        return sum([l for l, c in self])
 
-        return sum([l for l, op in self.iter()])
+    def reverse(self):
+        """Just reverse CIGAR without swapping in/del. Used for reverse complement."""
+        return ''.join(reversed([f"{l}{c}" for l, c in self]))
 
-    def reversed(self):
-        """
-        Just reverse CIGAR without swapping in/del. Used for reverse complement.
-        """
-
-        return ''.join(reversed([f"{l}{op}" for l, op in self.iter()]))
+    def swap_indel(self):
+        """Swap I and D. This inverts the role of query and target."""
+        self.string = self.string.replace("I", "?").replace("D", "I").replace("?", "D")
 
     def flatten(self):
-        """
-        Convert CIGAR to a sequence of operations. Used for masking some specific intervals.
-        """
+        """Convert to a sequence of the operations."""
+        return FlattenCigar(''.join([c for l, c in self for i in range(l)]))
 
-        return FlattenCigar(''.join([op for l, op in self.iter() for i in range(l)]))
-
-    def mask_intvl(self, intvl, ignore_op='D'):
+    def mask_intvl(self, intvl, ignore_op='D'):   # TODO: refactor
         # TODO: how to do about I/D/X around intervals' boundaries
 
         cigar_f = self.flatten()
@@ -93,13 +90,25 @@ class Cigar:
 
 @dataclass(repr=False)
 class FlattenCigar:
+    """Class for representing CIGAR as a sequence of operations, which is easier to handle."""
     string: str
 
-    def unflatten(self):
-        """
-        Convert a series of oprations to a normal CIGAR string.
-        """
+    def __str__(self):
+        return self.string
 
+    def __iter__(self):
+        self._i = 0
+        return self
+
+    def __next__(self):
+        if self._i == len(self.string):
+            raise StopIteration()
+        ret = self.string[self._i]
+        self._i += 1
+        return ret
+
+    def unflatten(self):
+        """Convert to the normal CIGAR string."""
         cigar = ""
         count = 0
         prev_c = self.string[0]
@@ -116,30 +125,30 @@ class FlattenCigar:
 
 @dataclass(repr=False, eq=False)
 class DotPlot:
-    out_dir: str
-    gepard_command: str
+    """Draw dot plot between 2 strings/fasta files using Gepard."""
+    gepard: str
+    out_dir: str = "tmp"
 
     def __post_init__(self):
         run_command(f"mkdir -p {self.out_dir}")
-        self.dotplot_fname = join(self.out_dir, "dotplot.png")
+        self.out_fname = join(self.out_dir, "dotplot.png")
 
     def _plot(self, a_fname, b_fname):
         run_command(' '.join([f"unset DISPLAY;",
-                              f"{self.gepard_command}",
-                              f"-seq1 {a_fname}",
-                              f"-seq2 {b_fname}",
-                              f"-outfile {self.dotplot_fname}"]))
-
+                              f"{self.gepard} -seq1 {a_fname} -seq2 {b_fname}",
+                              f"-outfile {self.out_fname}"]))
         fig, ax = plt.subplots(figsize=(11, 11))
         ax.tick_params(labelbottom=False, bottom=False)
         ax.tick_params(labelleft=False, left=False)
-        plt.imshow(img.imread(self.dotplot_fname))
+        plt.imshow(img.imread(self.out_fname))
         plt.show()
 
     def plot_fasta(self, a_fname, b_fname):
+        """Show dot plot between 2 fasta files."""
         self._plot(a_fname, b_fname)
 
     def plot(self, a_seq, b_seq, a_name="a", b_name="b"):
+        """Show dot plot between 2 strings."""
         a_fname, b_fname = join(self.out_dir, "a.fasta"), join(self.out_dir, "b.fasta")
         save_fasta({f"{a_name}/0/0_{len(a_seq)}": a_seq}, a_fname)
         save_fasta({f"{b_name}/0/0_{len(b_seq)}": b_seq}, b_fname)

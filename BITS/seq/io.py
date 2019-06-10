@@ -1,26 +1,23 @@
-from .core import single_to_multi
+from Bio.SeqIO import FastaIO
 
 
 def load_fasta(in_fname):
-    """
-    Load a fasta file as a dict of {header: seq}.
-    """
-
-    from Bio.SeqIO import FastaIO
+    """Load a fasta file as a dict of {header: seq}."""
     with open(in_fname, 'r') as f:
         return dict(FastaIO.SimpleFastaParser(f))
 
 
-def save_fasta(reads, out_fname, sort=True, out_type="single", width=100):
+def save_fasta(reads, out_fname, sort=True, width=-1):
     """
-    NOTE: <reads> must be a dictionary.
-    If <sort> is True, the headers in <reads> will be sorted.
-    <out_type> defines the existence of newlines within the sequences (by every <width> bp).
+    <reads> must be a dict of {header: seq}.
+    If <sort> is True, the headers will be sorted.
+    Newlines are inserted at every <width> bp in each sequence (-1 means no newlines).
     """
+    def split_seq(s, w):
+        return [s[i:i + w] for i in range(0, len(seq), w)]
 
-    assert out_type in set(["single", "multi"]), "<out_type> must be 'single' or 'multi'."
     with open(out_fname, 'w') as f:
         for header, seq in sorted(reads.items()) if sort else reads.items():
-            if out_type == "multi":
-                seq = '\n'.join(single_to_multi(seq, width))
+            if width > 0:
+                seq = '\n'.join(split_seq(seq, width))
             f.write(f">{header}\n{seq}\n")
