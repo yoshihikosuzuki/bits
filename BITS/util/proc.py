@@ -5,9 +5,7 @@ from logzero import logger
 
 
 def run_command(command):
-    """
-    General-purpose shell command executer.
-    """
+    """General-purpose shell command executer."""
     try:
         out = sp.check_output(command, shell=True)
     except sp.CalledProcessError as proc:
@@ -29,7 +27,5 @@ class NoDaemonProcess(Process):
 
 
 class NoDaemonPool(Pool):
-    """
-    Inherited class of Pool running as a non-daemon process. It can have child processes.
-    """
+    """Inherited class of Pool running as a non-daemon process. It can have child processes."""
     Process = NoDaemonProcess

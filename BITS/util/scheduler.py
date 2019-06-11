@@ -6,9 +6,7 @@ from .log import print_log
 
 @dataclass(repr=False, eq=False)
 class Scheduler:
-    """
-    Utility class for job submission using a scheduler.
-    """
+    """Utility class for job submission using a scheduler."""
     scheduler_name: str
     submit_command: str
     queue_name: str = None
@@ -27,9 +25,7 @@ class Scheduler:
                mem_limit=None,
                depend=[],
                wait=False):
-        """
-        Submit <script: string> after writing it into a file <out_fname>.
-        """
+        """Submit <script: string> after writing it into a file <out_fname>."""
         with open(out_fname, 'w') as f:
             f.write((self.sge_nize if self.scheduler_name == "sge"
                      else self.slurm_nize)(script,

@@ -9,11 +9,9 @@ def suppress_debug_log():
 
 
 def print_log(proc_name, show_args=True):
-    """
-    Simple decolator for watching start and end of a function.
-    """
+    """Simple decolator for watching start and end of a function."""
     def _print_log(func):
-        @wraps(func)   # necessary to show information of the original function when doing `func?`
+        @wraps(func)   # necessary to show docstring of the original function
         def wrapper(*args, **kwds):
             args_info = f"(args={args}, kwds={kwds})" if show_args else ""
             logger.info(f"Starting {proc_name} {args_info}")

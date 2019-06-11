@@ -1,7 +1,4 @@
-"""
-Utilities for pyinterval package [https://github.com/taschini/pyinterval].
-"""
-
+"""Utilities for pyinterval package [https://github.com/taschini/pyinterval]."""
 from interval import interval
 
 
