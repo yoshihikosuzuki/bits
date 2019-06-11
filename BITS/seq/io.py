@@ -1,4 +1,5 @@
 from Bio.SeqIO import FastaIO
+from .utils import split_seq
 
 
 def load_fasta(in_fname):
@@ -13,9 +14,6 @@ def save_fasta(reads, out_fname, sort=True, width=-1):
     If <sort> is True, the headers will be sorted.
     Newlines are inserted at every <width> bp in each sequence (-1 means no newlines).
     """
-    def split_seq(s, w):
-        return [s[i:i + w] for i in range(0, len(seq), w)]
-
     with open(out_fname, 'w') as f:
         for header, seq in sorted(reads.items()) if sort else reads.items():
             if width > 0:
