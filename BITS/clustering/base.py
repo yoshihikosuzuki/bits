@@ -7,7 +7,7 @@ from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
-from BITS.plot.plotly import make_layout, show_plot, make_scatter
+from BITS.plot.plotly import make_hist, make_scatter, make_layout, show_plot
 
 
 @dataclass(repr=False, eq=False)
@@ -21,7 +21,7 @@ class Clustering:
     s_dist_mat  : np.ndarray = field(init=False, default=None)   # square distance matrix
     c_dist_mat  : np.ndarray = field(init=False, default=None)   # condensed distance matrix
     cache       : dict       = field(default_factory=dict)   # store large intermediate data
-    
+
     def __post_init__(self):
         if type(self.data) is list:
             self.data = pd.Series(self.data)
@@ -50,23 +50,15 @@ class Clustering:
         for cluster_id in sorted(list(set(self.assignment))):
             yield (cluster_id, self.cluster(cluster_id, return_where))
 
-    def merge_cluster(self, cluster_to, cluster_from):   # TODO: swap the arguments
+    def merge_cluster(self, cluster_from, cluster_to):
         """Change the assignments of the data in <cluster_from> as <cluster_to>."""
         self.assignment[self.cluster(cluster_from, return_where=True)] = cluster_to
 
-    def hist_cluster_size(self, bins=100, n_print=5):   # TODO: use plotly simple hist utility
-        """Histogram of the size of the clusters.
-        Also both largest and smallest <n_print> clusters are shown.
-        """
-        cluster_size = Counter(self.assignment)
-        print(f"{n_print} largest clusters:")
-        for cluster_id, size in cluster_size.most_common()[:n_print]:
-            print(f"cluster {cluster_id} ({size} units)")
-        print(f"{n_print} smallest clusters:")
-        for cluster_id, size in cluster_size.most_common()[-n_print:]:
-            print(f"cluster {cluster_id} ({size} units)")
-        plt.hist(list(cluster_size.values()), bins=bins)
-        plt.show()
+    def hist_cluster_size(self, bin_size=10, width=18, height=10):
+        """Histogram of the size of the clusters."""
+        trace = make_hist(list(Counter(self.assignment).values()), bin_size=bin_size)
+        layout = make_layout(width, height, x_title="Cluster size", y_title="Frequency")
+        show_plot([trace], layout)
 
     def plot_dist_mat(self, show_scale=False, zmin=0, zmax=1, size=500, title=None, out_fname=None):
         """Draw a heatmap of <s_dist_mat>."""

@@ -126,8 +126,8 @@ class ClusteringSeq(Clustering):
             for j in range(i + 1, n_cons):
                 if self.runner.algin(self.cons_seqs["sequence"].iloc[i],
                                      self.cons_seqs["sequence"].iloc[j]).diff < th_merge:
-                    self.merge_cluster(self.cons_seqs["cluster_id"].iloc[i],
-                                       self.cons_seqs["cluster_id"].iloc[j])
+                    self.merge_cluster(self.cons_seqs["cluster_id"].iloc[j],
+                                       self.cons_seqs["cluster_id"].iloc[i])
                     flag_next = True
         self.cons_seqs = self._generate_consensus()
         return flag_next
@@ -170,21 +170,14 @@ class ClusteringSeq(Clustering):
         logger.info(f"Final consensus sequences:\n{self.cons_seqs}")
 
 
-def main():
-    args = load_args()
-    c = load_pickle(args.clustering_obj_pkl)
-    save_pickle(c._calc_dist_mat(load_pickle(args.rows_pkl), args.n_core), args.out_pkl)
-
-
-def load_args():
+if __name__ == "__main__":
+    """Only for internal usage by calc_dist_mat."""
     p = argparse.ArgumentParser()
     p.add_argument("clustering_obj_pkl", type=str)
     p.add_argument("rows_pkl", type=str)
     p.add_argument("out_pkl", type=str)
     p.add_argument("n_core", type=int)
-    return p.parse_args()
+    args = p.parse_args()
 
-
-if __name__ == "__main__":
-    """Only for internal usage by calc_dist_mat."""
-    main()
+    c = load_pickle(args.clustering_obj_pkl)
+    save_pickle(c._calc_dist_mat(load_pickle(args.rows_pkl), args.n_core), args.out_pkl)
