@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from logzero import logger
 import edlib
-from .core import revcomp, Cigar
+from .utils import revcomp
+from .cigar import Cigar
 
 edlib_mode = {"global": "NW", "glocal": "HW", "local": "SHW"}
 

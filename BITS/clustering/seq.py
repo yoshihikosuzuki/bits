@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.spatial.distance import squareform
 from logzero import logger
 import consed
-from BITS.seq.run import EdlibRunner
+from BITS.seq.align import EdlibRunner
 from BITS.util.proc import run_command, NoDaemonPool
 from BITS.util.log import print_log
 from BITS.util.io import save_pickle, load_pickle
@@ -56,12 +56,11 @@ class ClusteringSeq(Clustering):
             n_core = n_distribute = 1
 
         # Reorder the rows in the distance matrix so that average cumulative size becomes uniform
-        row_indices = [int(i / 2) if i % 2 == 0
-                       else self.N - 2 - int((i - 1) / 2)
-                       for i in range(self.N - 1)]   # data[self.N] will not be query, so excluded
+        rows = [int(i / 2) if i % 2 == 0  else self.N - 2 - int((i - 1) / 2)
+                for i in range(self.N - 1)]   # data[self.N] will not be query, so excluded
 
         if n_distribute == 1:
-            dist_arrays = self._calc_dist_mat(row_indices, n_core)
+            dist_arrays = self._calc_dist_mat(rows, n_core)
         else:
             # Output this clustering object so that each job can access the data
             obj_fname = join(dir_name, f"{out_prefix}_obj.pkl")
@@ -70,29 +69,25 @@ class ClusteringSeq(Clustering):
             # Split into and submit jobs
             s = Scheduler(job_scheduler, submit_command)
             jids = []
-            unit_n = -(-len(row_indices) // n_distribute)
-            row_indices_sub = [row_indices[i * unit_n:(i + 1) * unit_n]
-                               for i in range(n_distribute)]
-
-            for i, rs in enumerate(row_indices_sub):
+            unit_n = -(-len(rows) // n_distribute)
+            for i in range(n_distribute):
                 index = str(i + 1).zfill(int(np.log10(n_distribute) + 1))
+                rows_part = rows[i * unit_n:(i + 1) * unit_n]
                 rows_fname = join(dir_name, f"{out_prefix}_rows.{index}.pkl")
                 out_fname = join(dir_name, f"{out_prefix}.{index}.pkl")
-                script_fname = join(dir_name, f"{out_prefix}.sge.{index}")
-                save_pickle(rs, rows_fname)
+                script_fname = join(dir_name, f"{out_prefix}.sh.{index}")
+                save_pickle(rows_part, rows_fname)
+                script = (f"python -m BITS.clustering.seq -n {n_core} "
+                          f"{obj_fname} {rows_fname} {out_fname}")
 
-                jids.append(s.submit(' '.join([f"python -m BITS.clustering.seq",
-                                               f"-n {n_core}",
-                                               obj_fname,
-                                               rows_fname,
-                                               out_fname]),
+                jids.append(s.submit(script,
                                      script_fname,
                                      job_name="calc_dist_mat",
                                      n_core=n_core))
 
             # Merge the results
             s.submit("sleep 1s",
-                     join(dir_name, "gather.sge"),
+                     join(dir_name, "gather.sh"),
                      job_name="gather_dist_mat",
                      depend=jids,
                      wait=True)
@@ -137,7 +132,7 @@ class ClusteringSeq(Clustering):
         self.cons_seqs = self._generate_consensus()
         return flag_next
 
-    def generate_consensus(self, th_merge=0.05, th_noisy=0.01, th_synchronize=0.3):
+    def generate_consensus(self, th_merge=0.05, th_noisy=0.01, th_synchronize=0.3):   # TODO: reconsider the method
         """Calculate a consensus sequence for each cluster.
         1. Initial consensus sequences are computed by Consed.
         2. Every two consensus sequences which have dis-similarity less than <th_merge> are merged.
@@ -182,12 +177,12 @@ def main():
 
 
 def load_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("clustering_obj_pkl", type=str)
-    parser.add_argument("rows_pkl", type=str)
-    parser.add_argument("out_pkl", type=str)
-    parser.add_argument("-n", "--n_core", type=int, default=1)
-    return parser.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("clustering_obj_pkl", type=str)
+    p.add_argument("rows_pkl", type=str)
+    p.add_argument("out_pkl", type=str)
+    p.add_argument("n_core", type=int)
+    return p.parse_args()
 
 
 if __name__ == "__main__":

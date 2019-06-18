@@ -1,4 +1,11 @@
+import configparser
 import pickle
+
+
+def load_config(config_fname):
+    config = configparser.ConfigParser()
+    config.read(config_fname)
+    return config
 
 
 def load_pickle(pkl_fname):

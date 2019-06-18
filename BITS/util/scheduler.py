@@ -27,15 +27,15 @@ class Scheduler:
                wait=False):
         """Submit <script: string> after writing it into a file <out_fname>."""
         with open(out_fname, 'w') as f:
-            f.write((self.sge_nize if self.scheduler_name == "sge"
-                     else self.slurm_nize)(script,
-                                           job_name,
-                                           log_fname,
-                                           n_core,
-                                           time_limit,
-                                           mem_limit,
-                                           depend,
-                                           wait))
+            f.write((self._sge_nize if self.scheduler_name == "sge"
+                     else self._slurm_nize)(script,
+                                            job_name,
+                                            log_fname,
+                                            n_core,
+                                            time_limit,
+                                            mem_limit,
+                                            depend,
+                                            wait))
         ret = run_command(f"{self.submit_command} {out_fname}")
         return ret.split()[2] if self.scheduler_name == "sge" else ret.split()[-1]
 
