@@ -36,10 +36,10 @@ class ConsedRunner:
         self.command = (f"consed {vv} {vg} {vf} -w{self.display_width} {self.seqs_fname} > {self.out_fname}")
 
     def _load_consensus(self):
-        return run_command(f"awk 'BEGIN {{seq = \"\"}} "
-                           f"$0 == \"\" {{exit}} {{seq = seq $0}} "
-                           f"END {{print seq}}' "
-                           f"{self.out_fname}").strip()
+        self.cons_seq = run_command(f"awk 'BEGIN {{seq = \"\"}} "
+                                    f"$0 == \"\" {{exit}} {{seq = seq $0}} "
+                                    f"END {{print seq}}' "
+                                    f"{self.out_fname}").strip()
 
     def _load_variant_matrix(self):
         ret = run_command(f"grep -v '*' {self.out_fname} | "
@@ -53,7 +53,8 @@ class ConsedRunner:
         vmatrix = np.zeros((M, N), dtype=int)
         for i, r in enumerate(ret):
             vmatrix[i, :] = list(map(int, list(r.strip())))
-        return vmatrix.T[1:-1, :]   # change to form of (sequences, variants)
+        self.variant_matrix = vmatrix.T[1:-1, :]   # change to form of (sequences, variants)
+        # TODO: implement extraction of variants information (move from src.old/encode.py)
 
     def run(self, in_seqs: List[str]):
         """Consensus sequence and variant matrix will be set to <self.cons_seq> and <self.variant_matrix>."""
@@ -64,6 +65,6 @@ class ConsedRunner:
         # Execute Consed
         run_command(self.command)
         # Load the results
-        self.cons_seq = self._load_consensus()
+        self._load_consensus()
         if self.variant_vector:
-            self.variant_matrix = self._load_variant_matrix()
+            self._load_variant_matrix()

@@ -22,7 +22,7 @@ class Alignment:
     diff    : float = None
     cigar   : Cigar = None
 
-    def __str__(self):
+    def __repr__(self):
         return (f"q[{self.q_start}:{self.q_end}] vs "
                 f"t{'' if self.strand == 0 else '*'}[{self.t_start}:{self.t_end}]   "
                 f"({self.length} bp, {self.diff:.3} %diff)")
@@ -30,7 +30,7 @@ class Alignment:
     def mapped_seq(self, target):
         """Returns the substring of <target> (as forward sequence) alignd to the query."""
         ret = (target[self.t_start:self.t_end] if self.t_start != self.t_end
-               else target[self.t_start:] + target[self.t_start])   # accept only global for cyclic
+               else target[self.t_start:] + target[:self.t_start])   # accept only global for cyclic
         if self.strand == 1:
             ret = revcomp(ret)
         return ret

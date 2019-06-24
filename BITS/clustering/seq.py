@@ -77,8 +77,7 @@ class ClusteringSeq(Clustering):
                 out_fname = join(dir_name, f"{out_prefix}.{index}.pkl")
                 script_fname = join(dir_name, f"{out_prefix}.sh.{index}")
                 save_pickle(rows_part, rows_fname)
-                script = (f"python -m BITS.clustering.seq -n {n_core} "
-                          f"{obj_fname} {rows_fname} {out_fname}")
+                script = (f"python -m BITS.clustering.seq {obj_fname} {rows_fname} {out_fname} {n_core}")
 
                 jids.append(s.submit(script,
                                      script_fname,
@@ -93,7 +92,7 @@ class ClusteringSeq(Clustering):
                      wait=True)
 
             dist_arrays = []
-            for fname in run_command(f"find {dir_name} -name '{out_prefix}.*.pkl'").strip().split('\n'):
+            for fname in run_command(f"find {dir_name} -maxdepth 1 -name '{out_prefix}.*.pkl'").strip().split('\n'):
                 dist_arrays += load_pickle(fname)
 
         # Store the arrays into matrix
@@ -103,19 +102,24 @@ class ClusteringSeq(Clustering):
         self.c_dist_mat = squareform(self.s_dist_mat)
 
     def _generate_consensus(self):
-        synchronized = not (self.cyclic or self.rc)
+        synchronized = not (self.cyclic or self.revcomp)
         ret = {}
         index = 0
         for cluster_id, seqs in self.clusters():
+            if len(seqs) <= 1:
+                logger.info(f"Skip isolated cluster {cluster_id}.")
+                continue
             # TODO: better way to choose initial seed sequence instead of the first one?
             cons_seq = consed.consensus(list(seqs) if synchronized
                                         else [seq if i == 0
                                               else self.runner.align(seqs.iloc[0], seq).mapped_seq(seq)
                                               for i, seq in enumerate(seqs)],
                                         n_iter=3)
-            if cons_seq != "":
-                ret[index] = (cluster_id, seqs.shape[0], len(cons_seq), cons_seq)
-                index += 1
+            if cons_seq == "":
+                logger.warn(f"Consed failed: cluster {cluster_id} ({len(seqs)} seqs)")
+                continue
+            ret[index] = (cluster_id, seqs.shape[0], len(cons_seq), cons_seq)
+            index += 1
         return pd.DataFrame.from_dict(ret, orient="index",
                                       columns=("cluster_id", "cluster_size", "length", "sequence"))
 
@@ -124,7 +128,7 @@ class ClusteringSeq(Clustering):
         n_cons = self.cons_seqs.shape[0]   # != <self.n_clusters> due to Consed error
         for i in range(n_cons - 1):
             for j in range(i + 1, n_cons):
-                if self.runner.algin(self.cons_seqs["sequence"].iloc[i],
+                if self.runner.align(self.cons_seqs["sequence"].iloc[i],
                                      self.cons_seqs["sequence"].iloc[j]).diff < th_merge:
                     self.merge_cluster(self.cons_seqs["cluster_id"].iloc[j],
                                        self.cons_seqs["cluster_id"].iloc[i])
@@ -145,21 +149,26 @@ class ClusteringSeq(Clustering):
 
         # Initial consensus sequences
         self.cons_seqs = self._generate_consensus()
-        logger.info(f"Initial consensus sequences:\n{self.cons_seqs}")
+        logger.info(f"Unsynchronized consensus sequences:\n{self.cons_seqs}")
 
         # Merge too close clusters
+        n_clusters_prev = self.cons_seqs.shape[0]
         while self._merge_clusters(th_merge):
             pass
-        logger.info(f"After merging similar units:\n{self.cons_seqs}")
+        if self.cons_seqs.shape[0] != n_clusters_prev:
+            logger.info(f"Merged similar clusters:\n{self.cons_seqs}")
 
         # Remove remaining noisy clusters
         del_row = [index for index, df in self.cons_seqs.iterrows()
-                   if df["cluster_size"] < self.N * th_noisy]   # too small cluster
-        self.cons_seqs = self.cons_seqs.drop(del_row).reset_index(drop=True)
-        logger.debug(f"After removing noisy clusters:\n{self.cons_seqs}")
+                   if df["cluster_size"] < max([2, self.N * th_noisy])]   # too small cluster
+        if len(del_row) > 0:
+            self.cons_seqs = self.cons_seqs.drop(del_row).reset_index(drop=True)
+            logger.debug(f"Removed too small clusters:\n{self.cons_seqs}")
 
         # Synchronize phase of the consensus units (= start position)
         n_cons = self.cons_seqs.shape[0]
+        if n_cons == 1:
+            return
         for i in range(n_cons - 1):   # TODO: simultaneously synchronize, or fix single seed
             for j in range(i + 1, n_cons):
                 align = self.runner.align(self.cons_seqs["sequence"].iloc[i],
@@ -167,7 +176,7 @@ class ClusteringSeq(Clustering):
                 if align.diff < th_synchronize:
                     logger.debug(f"Synchronize {i} and {j} (strand = {align.strand})")
                     self.cons_seqs.loc[j, "sequence"] = align.mapped_seq(self.cons_seqs["sequence"].iloc[j])
-        logger.info(f"Final consensus sequences:\n{self.cons_seqs}")
+        logger.info(f"Synchronized consensus sequences:\n{self.cons_seqs}")
 
 
 if __name__ == "__main__":

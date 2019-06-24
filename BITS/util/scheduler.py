@@ -1,7 +1,7 @@
 import argparse
 from dataclasses import dataclass
+from logzero import logger
 from .proc import run_command
-from .log import print_log
 
 
 @dataclass(repr=False, eq=False)
@@ -14,7 +14,6 @@ class Scheduler:
     def __post_init__(self):
         assert self.scheduler_name in ("sge", "slurm"), "Not supported scheduler"
 
-    @print_log("a job")
     def submit(self,
                script,
                out_fname,
@@ -26,6 +25,7 @@ class Scheduler:
                depend=[],
                wait=False):
         """Submit <script: string> after writing it into a file <out_fname>."""
+        logger.info(f"Submitting a job: {script}")
         with open(out_fname, 'w') as f:
             f.write((self._sge_nize if self.scheduler_name == "sge"
                      else self._slurm_nize)(script,

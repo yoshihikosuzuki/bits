@@ -8,7 +8,7 @@ def suppress_debug_log():
     logzero.loglevel(logging.INFO)
 
 
-def print_log(proc_name, show_args=True):
+def print_log(proc_name, show_args=False):
     """Simple decolator for watching start and end of a function."""
     def _print_log(func):
         @wraps(func)   # necessary to show docstring of the original function

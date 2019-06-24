@@ -60,38 +60,40 @@ class Clustering:
         layout = make_layout(width, height, x_title="Cluster size", y_title="Frequency")
         show_plot([trace], layout)
 
-    def plot_dist_mat(self, show_scale=False, zmin=0, zmax=1, size=500, title=None, out_fname=None):
+    def plot_dist_mat(self, variable_scale=False, show_scale=True, size=500, out_fname=None):
         """Draw a heatmap of <s_dist_mat>."""
         assert self.N <= 1000, "Too many data to plot"
-        trace = go.Heatmap(z=self.s_dist_mat, colorscale="YlGnBu", zmin=zmin, zmax=zmax, showscale=show_scale)
-        layout = make_layout(size, size, title=title, y_reversed=True)
+        trace = go.Heatmap(z=self.s_dist_mat, colorscale="YlGnBu", showscale=show_scale,
+                           zmin=None if variable_scale else 0., zmax=None if variable_scale else 1.)
+        layout = make_layout(size, size, y_reversed=True)
         show_plot([trace], layout, out_fname=out_fname)
 
-    def plot_tsne(self, size=700, title=None, out_fname=None):
+    def plot_tsne(self, size=700, marker_size=5, title=None, out_fname=None):
         """Draw t-SNE plot of the data. Requires <s_dist_mat>."""
         assert self.s_dist_mat is not None, "No distance matrix"
         coord = TSNE(n_components=2, metric='precomputed').fit_transform(self.s_dist_mat)
         trace = make_scatter(coord[:, 0].T, coord[:, 1].T,
-                             text=[f"{self.names[i]}<br>{self.assignment[i]}" for i in range(self.N)],
+                             text=[f"{self.names[i]}<br>cluster {self.assignment[i]}" for i in range(self.N)],
                              col=self.assignment, col_scale="Rainbow", show_scale=False,
-                             marker_size=3)
+                             marker_size=marker_size)
         layout = make_layout(size, size, title=title)
         show_plot([trace], layout, out_fname=out_fname)
 
-    def cluster_hierarchical(self, method="ward", criterion="distance", threshold=0.7,
-                             show_dendrogram=False, figsize=(18, 10)):
-        """Requires <c_dist_mat>.
-        <method> = {single, complete, average, weighted, centroid, median, ward (default)}
+    def _calc_dendrogram(self, method):
+        if method not in self.cache:
+            assert self.c_dist_mat is not None, "No condensed distance matrix"
+            self.cache[method] = linkage(self.c_dist_mat, method=method)
+            return self.cache[method]
+        return self.cache[method]
+
+    def show_dendrogram(self, method="ward", figsize=(18, 10)):
+        plt.figure(figsize=figsize)
+        dendrogram(self._calc_dendrogram(method))
+        plt.show()
+
+    def cluster_hierarchical(self, method="ward", criterion="distance", threshold=0.7, figsize=(18, 10)):
+        """<method> = {single, complete, average, weighted, centroid, median, ward (default)}
         <criterion> = {inconsistent, distance (default), maxclust, monocrit, maxclust_monocrit}
         <threshold> = threshold in distance criterion
         """
-        if method in self.cache:
-            self.hc_result = self.cache[method]
-        else:
-            assert self.c_dist_mat is not None, "No condensed distance matrix"
-            self.cache[method] = self.hc_result = linkage(self.c_dist_mat, method=method)
-        if show_dendrogram:
-            plt.figure(figsize=figsize)
-            dendrogram(self.hc_result)
-            plt.show()
-        self.assignment = np.array(fcluster(self.hc_result, t=threshold, criterion=criterion))
+        self.assignment = np.array(fcluster(self._calc_dendrogram(method), t=threshold, criterion=criterion))
