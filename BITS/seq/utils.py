@@ -1,4 +1,4 @@
-RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
+RC_MAP = dict(zip('ACGTacgtNn-', 'TGCAtgcaNn-'))
 
 
 def revcomp(seq):
@@ -6,8 +6,8 @@ def revcomp(seq):
 
 
 def compress_homopolymer(seq):
-    ret = ""
-    prev = ""
+    ret = ''
+    prev = ''
     for s in seq:
         if s != prev:
             ret += s

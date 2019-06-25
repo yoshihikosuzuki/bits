@@ -12,11 +12,11 @@ class Cigar:
 
     def __iter__(self):
         self._objs = []   # list of the tuples (count, cigar) in <self.string>
-        count = ""
+        count = ''
         for c in self.string:
             if c in CIGAR_CHAR:
                 self._objs.append((int(count), c))
-                count = ""
+                count = ''
             else:
                 count += c
         self._i = 0   # index of <self._objs>
@@ -31,19 +31,19 @@ class Cigar:
 
     @property
     def alignment_len(self):
-        """Alignment length including gaps and masked regions."""
+        '''Alignment length including gaps and masked regions.'''
         return sum([l for l, c in self])
 
     def reverse(self):
-        """Just reverse CIGAR without swapping in/del. Used for reverse complement."""
-        return ''.join(reversed([f"{l}{c}" for l, c in self]))
+        '''Just reverse CIGAR without swapping in/del. Used for reverse complement.'''
+        return ''.join(reversed([f'{l}{c}' for l, c in self]))
 
     def swap_indel(self):
-        """Swap I and D. This inverts the role of query and target."""
-        self.string = self.string.replace("I", "?").replace("D", "I").replace("?", "D")
+        '''Swap I and D. This inverts the role of query and target.'''
+        self.string = self.string.replace('I', '?').replace('D', 'I').replace('?', 'D')
 
     def flatten(self):
-        """Convert to a sequence of the operations."""
+        '''Convert to a sequence of the operations.'''
         return FlattenCigar(''.join([c for l, c in self for i in range(l)]))
 
     def mask_intvl(self, intvl, ignore_op='D'):   # TODO: refactor
@@ -70,7 +70,7 @@ class Cigar:
 
 @dataclass(repr=False)
 class FlattenCigar:
-    """Class for representing CIGAR as a sequence of operations, which is easier to handle."""
+    '''Class for representing CIGAR as a sequence of operations, which is easier to handle.'''
     string: str
 
     def __str__(self):
@@ -88,16 +88,16 @@ class FlattenCigar:
         return ret
 
     def unflatten(self):
-        """Convert to the normal CIGAR string."""
-        cigar = ""
+        '''Convert to the normal CIGAR string.'''
+        cigar = ''
         count = 0
         prev_c = self.string[0]
         for c in self.string:
             if c == prev_c:
                 count += 1
             else:
-                cigar += f"{count}{prev_c}"
+                cigar += f'{count}{prev_c}'
                 count = 1
                 prev_c = c
-        cigar += f"{count}{prev_c}"
+        cigar += f'{count}{prev_c}'
         return Cigar(cigar)

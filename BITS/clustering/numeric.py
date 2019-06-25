@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import KMeans, Birch
@@ -10,9 +10,9 @@ from .base import Clustering
 
 @dataclass(repr=False, eq=False)
 class ClusteringNumeric(Clustering):
-    """Class for clustering of numerical data."""
-    def calc_dist_mat(self, metric="euclidean"):
-        """Required by hierarchical clustering and t-SNE plot."""
+    '''Class for clustering of numerical data.'''
+    def calc_dist_mat(self, metric='euclidean'):
+        '''Required by hierarchical clustering and t-SNE plot.'''
         self.c_dist_mat = pdist(self.data, metric=metric)
         self.s_dist_mat = squareform(self.c_dist_mat)
 
@@ -46,13 +46,13 @@ class ClusteringNumeric(Clustering):
         return gmm
 
     def gmm_bic(self, max_n_clusters=100):
-        """Gaussian Mixture Model with model selection by BIC."""
+        '''Gaussian Mixture Model with model selection by BIC.'''
         gmm_bics = [self._gmm_bic(i).bic(self.data) for i in range(1, max_n_clusters + 1)]
         logger.debug(gmm_bics)
         self.assignment = self._gmm_bic(np.argmin(gmm_bics) + 1).predict(self.data)
 
     def dpmm(self, max_iteration=1000000):   # TODO: tune parameters (max_iteration, converge_threshold_*)
-        """Dirichlet Process (Multinomial) Mixture Model with concentration hyperparameter = 1.0"""
+        '''Dirichlet Process (Multinomial) Mixture Model with concentration hyperparameter = 1.0'''
         #dpmm = DPMM(self.data, verbose=True)   # TODO: store the data for plots?
         #dpmm.run_sampling(max_iteration)
         #return dpmm.max_s

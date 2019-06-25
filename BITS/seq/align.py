@@ -4,15 +4,12 @@ import edlib
 from .utils import revcomp
 from .cigar import Cigar
 
-edlib_mode = {"global": "NW", "glocal": "HW", "local": "SHW"}
+edlib_mode = {'global': 'NW', 'glocal': 'HW', 'local': 'SHW'}
 
 
 @dataclass(repr=False, eq=False)
 class Alignment:
-    """
-    Class for specifying the fields an alignment should have.
-      query == <cigar>(<strand>(target[<t_start>:<t_end>]))
-    """
+    '''query == <cigar>(<strand>(target[<t_start>:<t_end>]))'''
     q_start : int   = None
     q_end   : int   = None
     t_start : int   = None
@@ -23,12 +20,12 @@ class Alignment:
     cigar   : Cigar = None
 
     def __repr__(self):
-        return (f"q[{self.q_start}:{self.q_end}] vs "
-                f"t{'' if self.strand == 0 else '*'}[{self.t_start}:{self.t_end}]   "
-                f"({self.length} bp, {self.diff:.3} %diff)")
+        return (f'q[{self.q_start}:{self.q_end}] vs '
+                f't{"" if self.strand == 0 else "*"}[{self.t_start}:{self.t_end}]   '
+                f'({self.length} bp, {self.diff:.3} %diff)')
 
     def mapped_seq(self, target):
-        """Returns the substring of <target> (as forward sequence) alignd to the query."""
+        '''Returns the substring of <target> (as forward sequence) alignd to the query.'''
         ret = (target[self.t_start:self.t_end] if self.t_start != self.t_end
                else target[self.t_start:] + target[:self.t_start])   # accept only global for cyclic
         if self.strand == 1:
@@ -37,17 +34,17 @@ class Alignment:
 
 
 def _set_cigar(aln, edlib_ret):
-    """Set CIGAR-related attributes in the given <aln> (assuming passed by reference)."""
-    if edlib_ret["cigar"] is None:
+    '''Set CIGAR-related attributes in the given <aln> (assuming passed by reference).'''
+    if edlib_ret['cigar'] is None:
         return
-    aln.cigar = Cigar(edlib_ret["cigar"])
+    aln.cigar = Cigar(edlib_ret['cigar'])
     aln.length = aln.cigar.alignment_len
-    aln.diff = edlib_ret["editDistance"] / aln.length
+    aln.diff = edlib_ret['editDistance'] / aln.length
 
 
 def _realign_cyclic(start_pos, query, target, strand):
-    """Realign query globally assuming <target> starts from and end at <start_pos> cyclically."""
-    edlib_ret = edlib.align(query, target[start_pos:] + target[:start_pos], "NW", task="path")
+    '''Realign query globally assuming <target> starts from and end at <start_pos> cyclically.'''
+    edlib_ret = edlib.align(query, target[start_pos:] + target[:start_pos], 'NW', task='path')
     aln = Alignment(t_start=start_pos if start_pos != len(target) else 0,
                     t_end=start_pos if start_pos != 0 else len(target),
                     strand=strand)
@@ -57,13 +54,12 @@ def _realign_cyclic(start_pos, query, target, strand):
         
 @dataclass(repr=False, eq=False)
 class EdlibRunner:
-    """
-    Class for running edlib for pairwise alignment of 2 sequences with several options.
-    In "glocal" mode, <query> is mapped to <target>.
+    '''Class for running edlib for pairwise alignment of 2 sequences with several options.
+    In 'glocal' mode, <query> is mapped to <target>.
     Usage:
-        r = EdlibRunner("global", rc=True, cyclic=False)
-        a = r.align("acgtac", "accgac")
-    """
+        r = EdlibRunner('global', rc=True, cyclic=False)
+        a = r.align('acgtac', 'accgac')
+    '''
     mode          : str
     revcomp       : bool  = True   # find reverse complement alignment as well if True
     cyclic        : bool  = False   # do cyclic alignment if True; currently only global cyclic is supported
@@ -72,20 +68,20 @@ class EdlibRunner:
     max_true_diff : float = 0.0     # skip alignment of the other strand if diff is already less than this
 
     def __post_init__(self):
-        assert self.mode in edlib_mode.keys(), f"Invalid mode name: {self.mode}"
+        assert self.mode in edlib_mode.keys(), f'Invalid mode name: {self.mode}'
         if self.cyclic:
-            assert self.mode == "global", "Only global mode is now supported for cyclic alignment"
-            assert not self.only_diff, "Invalid combination of <cyclic> and <only_diff> options."
-            self.mode = "glocal"
+            assert self.mode == 'global', 'Only global mode is now supported for cyclic alignment'
+            assert not self.only_diff, 'Invalid combination of <cyclic> and <only_diff> options.'
+            self.mode = 'glocal'
         if not self.revcomp and self.strand_prior == 1:
-            logger.error("Invalid combination of <revcomp> and <strand_prior> options.")
+            logger.error('Invalid combination of <revcomp> and <strand_prior> options.')
 
     def _run(self, query, target, strand):
         e = edlib.align(query,
                         target if strand == 0 else revcomp(target),
                         mode=edlib_mode[self.mode],
-                        task="distance" if self.only_diff else "path")
-        aln = Alignment(t_start=e["locations"][0][0], t_end=e["locations"][0][1] + 1, strand=strand)
+                        task='distance' if self.only_diff else 'path')
+        aln = Alignment(t_start=e['locations'][0][0], t_end=e['locations'][0][1] + 1, strand=strand)
         _set_cigar(aln, e)
         return aln
 
@@ -98,7 +94,7 @@ class EdlibRunner:
         return aln
 
     def align(self, query, target):
-        """Take alignment between <query> and <target>."""
+        '''Take alignment between <query> and <target>.'''
         if self.cyclic:
             target += target   # duplicate the target sequence
         aln = self._find_best_alignment(query, target)
