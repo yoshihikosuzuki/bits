@@ -5,15 +5,15 @@ from logzero import logger
 
 
 def run_command(command):
-    '''General-purpose shell command executer.'''
+    """General-purpose shell command executer."""
     try:
         out = sp.check_output(command, shell=True)
     except sp.CalledProcessError as proc:
-        logger.warn(f'Error raised during: {command}')
+        logger.warn(f"Error raised during: {command}")
         logger.exception(proc)
-        return proc.output.decode('utf-8')
+        return proc.output.decode("utf-8")
     else:
-        return out.decode('utf-8')
+        return out.decode("utf-8")
 
 
 class NoDaemonProcess(Process):
@@ -27,5 +27,5 @@ class NoDaemonProcess(Process):
 
 
 class NoDaemonPool(Pool):
-    '''Inherited class of Pool running as a non-daemon process. It can have child processes.'''
+    """Inherited class of Pool running as a non-daemon process. It can have child processes."""
     Process = NoDaemonProcess
