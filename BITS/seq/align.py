@@ -57,7 +57,7 @@ class EdlibRunner:
     """Class for running edlib for pairwise alignment of 2 sequences with several options.
     In "glocal" mode, <query> is mapped to <target>.
     Usage:
-        r = EdlibRunner("global", rc=True, cyclic=False)
+        r = EdlibRunner("global", revcomp=True, cyclic=False)
         a = r.align("acgtac", "accgac")
     """
     mode          : str

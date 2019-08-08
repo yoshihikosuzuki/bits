@@ -3,13 +3,13 @@ import plotly.graph_objs as go
 
 
 def make_line(x0, y0, x1, y1, col="black", width=1, layer="below"):
-    """Create a line-shape object for Plotly."""
+    """Create a (non-interactive) line-shape object for Plotly."""
     return dict(type="line", xref="x", yref="y", x0=x0, y0=y0, x1=x1, y1=y1,
                 line=dict(color=col, width=width), layer=layer)
 
 
 ######################################
-# --- Wrappers for Trace object. --- #
+# --- Wrapper for Trace objects. --- #
 ######################################
 
 def make_hist(x, start=None, end=None, bin_size=None):
@@ -18,7 +18,7 @@ def make_hist(x, start=None, end=None, bin_size=None):
 
 
 def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None, mode="markers",
-                 col=None, col_scale=None, show_scale=True, marker_size=5, name=None, show_legend=True):
+                 marker_size=5, col=None, col_scale=None, show_scale=True, name=None, show_legend=True):
     """Create a Plotly trace object of Scatter plot."""
     return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
                       hoverinfo="text" if text is not None else None,
