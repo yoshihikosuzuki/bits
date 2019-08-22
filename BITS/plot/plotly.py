@@ -8,6 +8,13 @@ def make_line(x0, y0, x1, y1, col="black", width=1, layer="below"):
                 line=dict(color=col, width=width), layer=layer)
 
 
+def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=0.5,
+              width=0, layer="below"):
+    """Create a (non-interactive) rectangle object."""
+    return dict(type="rect", xref=xref, yref=yref, x0=x0, y0=y0, x1=x1, y1=y1,
+                fillcolor=fill_col, opacity=opacity, line=dict(width=width), layer=layer)
+
+
 ######################################
 # --- Wrapper for Trace objects. --- #
 ######################################
@@ -32,7 +39,7 @@ def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None, 
 # --- Wrapper for Layout object. --- #
 ######################################
 
-def make_layout(width, height, title=None, x_title=None, y_title=None,
+def make_layout(width=None, height=None, title=None, x_title=None, y_title=None,
                 x_range=None, y_range=None, x_grid=True, y_grid=True,
                 x_reversed=False, y_reversed=False, shapes=None):
     """Create a Plotly Layout object."""
