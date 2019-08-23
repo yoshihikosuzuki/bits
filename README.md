@@ -40,7 +40,7 @@ cagtt
 
 
 
-### Short description on modules
+### Short description on the modules
 
 * `BITS.clustering`: Classes for clustering of numerical and sequence data.
 * `BITS.plot`: Utility functions for Plotly, enabling much simpler codes.
