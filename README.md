@@ -14,7 +14,7 @@ $ python3 setup.py install
 
 ## How to use
 
-In detail, **see [this Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb)** providing description of the modules and some examples.
+For details, **see [this Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb)** providing description of the modules and some examples.
 
 
 
