@@ -1,5 +1,5 @@
 import plotly.offline as py
-import plotly.graph_objs as go
+import plotly.graph_objects as go
 
 
 def make_line(x0, y0, x1, y1, col="black", width=1, layer="below"):
@@ -55,9 +55,9 @@ def make_layout(width=None, height=None, title=None, x_title=None, y_title=None,
 # --- Wrapper for Plotting. --- #
 #################################
 
-def show_plot(trace_list, layout, out_fname=None):
+def show_plot(trace_list, layout=None, out_fname=None):
     """Plot a figure in a Notebook or to <out_fname>."""
-    fig = go.Figure(data=trace_list, layout=layout)
+    fig = go.Figure(data=trace_list, layout=make_layout() if layout is None else layout)
     py.iplot(fig) if out_fname is None else py.iplot(fig, filename=out_fname)
 
 
