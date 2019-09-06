@@ -1,3 +1,4 @@
+from os.path import splitext
 import plotly.offline as py
 import plotly.graph_objects as go
 
@@ -19,9 +20,10 @@ def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=0.5,
 # --- Wrapper for Trace objects. --- #
 ######################################
 
-def make_hist(x, start=None, end=None, bin_size=None):
+def make_hist(x, start=None, end=None, bin_size=None, name=None, show_legend=True):
     """Create a Plotly trace object of Histogram plot."""
-    return go.Histogram(x=x, xbins=dict(start=start, end=end, size=bin_size))
+    return go.Histogram(x=x, xbins=dict(start=start, end=end, size=bin_size),
+                        name=name, showlegend=show_legend)
 
 
 def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None, mode="markers",
@@ -55,9 +57,16 @@ def make_layout(width=None, height=None, title=None, x_title=None, y_title=None,
 # --- Wrapper for Plotting. --- #
 #################################
 
-def show_plot(trace_list, layout=None, out_fname=None):
-    """Plot a figure in a Notebook or to <out_fname>."""
+def show_plot(trace_list, layout=None, out_fname=None, include_plotlyjs=False):
+    """Plot a figure in a Notebook or to <out_fname>.
+    File extension of <out_fname> can be "png", "jpeg", "svg" or "html".
+    <include_plotlyjs> = True, False or "cdn". True increases the file size by 3MB.
+    """
+    out_type = None if out_fname is None else splitext(out_fname)[-1][1:]
+    assert out_type is None or out_type in ("png", "jpeg", "svg", "html"), "Not supported file type"
+
     fig = go.Figure(data=trace_list, layout=make_layout() if layout is None else layout)
-    py.iplot(fig) if out_fname is None else py.iplot(fig, filename=out_fname)
-
-
+    py.iplot(fig, image=out_type if out_type != "html" else None,
+             filename=None if out_fname is None else splitext(out_fname)[0])
+    if out_type == "html":
+        fig.write_html(file=out_fname, include_plotlyjs=include_plotlyjs)
