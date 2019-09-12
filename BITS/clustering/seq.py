@@ -50,10 +50,13 @@ class ClusteringSeq(Clustering):
 
     @print_log("distance matrix calculation")
     def calc_dist_mat(self, n_core=1, n_distribute=1, dir_name=".", out_prefix="clustering",
-                      job_scheduler="sge", submit_command="qsub"):
+                      scheduler=None):
         """Compute all-vs-all distance matrix in parallel."""
         if n_core * n_distribute > self.N:   # no need for parallelization
             n_core = n_distribute = 1
+        if n_distribute > 1 and scheduler is None:
+            logger.info("<scheduler> is not set. <n_distribute> will be set to 1.")
+            n_distribute = 1
 
         # Reorder the rows in the distance matrix so that average cumulative size becomes uniform
         rows = [int(i / 2) if i % 2 == 0  else self.N - 2 - int((i - 1) / 2)
@@ -67,7 +70,6 @@ class ClusteringSeq(Clustering):
             save_pickle(self, obj_fname)
 
             # Split into and submit jobs
-            s = Scheduler(job_scheduler, submit_command)
             jids = []
             unit_n = -(-len(rows) // n_distribute)
             for i in range(n_distribute):
@@ -79,17 +81,17 @@ class ClusteringSeq(Clustering):
                 save_pickle(rows_part, rows_fname)
                 script = (f"python -m BITS.clustering.seq {obj_fname} {rows_fname} {out_fname} {n_core}")
 
-                jids.append(s.submit(script,
-                                     script_fname,
-                                     job_name="calc_dist_mat",
-                                     n_core=n_core))
+                jids.append(scheduler.submit(script,
+                                             script_fname,
+                                             job_name="calc_dist_mat",
+                                             n_core=n_core))
 
             # Merge the results
-            s.submit("sleep 1s",
-                     join(dir_name, "gather.sh"),
-                     job_name="gather_dist_mat",
-                     depend=jids,
-                     wait=True)
+            scheduler.submit("sleep 1s",
+                             join(dir_name, "gather.sh"),
+                             job_name="gather_dist_mat",
+                             depend=jids,
+                             wait=True)
 
             dist_arrays = []
             for fname in run_command(f"find {dir_name} -maxdepth 1 -name '{out_prefix}.*.pkl'").strip().split("\n"):
