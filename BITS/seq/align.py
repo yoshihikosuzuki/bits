@@ -22,7 +22,7 @@ class Alignment:
     def __repr__(self):
         return (f"q[{self.q_start}:{self.q_end}] vs "
                 f"t{'' if self.strand == 0 else '*'}[{self.t_start}:{self.t_end}]   "
-                f"({self.length} bp, {self.diff:.3} %diff)")
+                f"({self.length} bp, {100 * self.diff:.3}% diff)")
 
     def mapped_seq(self, target):
         """Returns the substring of <target> (as forward sequence) alignd to the query."""
