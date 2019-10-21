@@ -28,8 +28,8 @@ def _calc_dist_array(rows, data, runner):
 @dataclass(repr=False, eq=False)
 class ClusteringSeq(Clustering):
     """Class for clustering of DNA sequences."""
-    revcomp : InitVar[bool] = True   # allow reverse complement of the target sequence if True
-    cyclic  : InitVar[bool] = False   # allow cyclic alignment between two sequences if True
+    revcomp: InitVar[bool] = True   # allow reverse complement of the target sequence if True
+    cyclic : InitVar[bool] = False   # allow cyclic alignment between two sequences if True
 
     def __post_init__(self, revcomp, cyclic):
         super().__post_init__()

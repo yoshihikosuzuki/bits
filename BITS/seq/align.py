@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from logzero import logger
 import edlib
-from .utils import revcomp
+from .utils import revcomp_seq
 from .cigar import Cigar
 
 edlib_mode = {"global": "NW", "glocal": "HW", "local": "SHW"}
@@ -29,7 +29,7 @@ class Alignment:
         ret = (target[self.t_start:self.t_end] if self.t_start != self.t_end
                else target[self.t_start:] + target[:self.t_start])   # accept only global for cyclic
         if self.strand == 1:
-            ret = revcomp(ret)
+            ret = revcomp_seq(ret)
         return ret
 
 
@@ -78,7 +78,7 @@ class EdlibRunner:
 
     def _run(self, query, target, strand):
         e = edlib.align(query,
-                        target if strand == 0 else revcomp(target),
+                        target if strand == 0 else revcomp_seq(target),
                         mode=edlib_mode[self.mode],
                         task="distance" if self.only_diff else "path")
         aln = Alignment(t_start=e["locations"][0][0], t_end=e["locations"][0][1] + 1, strand=strand)
@@ -99,7 +99,7 @@ class EdlibRunner:
             target += target   # duplicate the target sequence
         aln = self._find_best_alignment(query, target)
         if aln.strand == 1:
-            target = revcomp(target)
+            target = revcomp_seq(target)
         if self.cyclic:
             target = target[:len(target) // 2]   # restore the target sequence
             if aln.t_end > len(target):   # adjust the positions to the original coordinates
