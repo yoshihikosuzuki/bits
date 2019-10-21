@@ -1,4 +1,5 @@
 from Bio import SeqIO
+import dnaio
 from .utils import split_seq
 
 

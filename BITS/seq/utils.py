@@ -2,7 +2,11 @@ RC_MAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 
 def revcomp(seq):
-    return "".join([RC_MAP[c] for c in seq[::-1]])
+    return ''.join([RC_MAP[c] for c in seq[::-1]])
+
+
+def reverse_seq(seq):
+    return ''.join(list(reversed(seq)))
 
 
 def compress_homopolymer(seq):
