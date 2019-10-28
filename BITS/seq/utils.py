@@ -25,6 +25,10 @@ def split_seq(seq, width):
     return [seq[i:i + width] for i in range(0, len(seq), width)]
 
 
+def asciis_to_phreds(qual):
+    return np.array([ascii_to_phred(a) for a in qual], dtype=np.int8)
+
+
 def ascii_to_phred(a):
     return ord(a) - 33
 

@@ -10,7 +10,6 @@ from BITS.seq.align import EdlibRunner
 from BITS.util.proc import run_command, NoDaemonPool
 from BITS.util.log import print_log
 from BITS.util.io import save_pickle, load_pickle
-from BITS.util.scheduler import Scheduler
 from .base import Clustering
 
 

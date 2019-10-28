@@ -3,13 +3,17 @@ import plotly.offline as py
 import plotly.graph_objects as go
 
 
+######################################
+# --- Wrapper for shape objects. --- #
+######################################
+
 def make_line(x0, y0, x1, y1, col="black", width=1, layer="below"):
     """Create a (non-interactive) line-shape object for Plotly."""
     return dict(type="line", xref="x", yref="y", x0=x0, y0=y0, x1=x1, y1=y1,
                 line=dict(color=col, width=width), layer=layer)
 
 
-def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=0.5,
+def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=1.,
               width=0, layer="below"):
     """Create a (non-interactive) rectangle object."""
     return dict(type="rect", xref=xref, yref=yref, x0=x0, y0=y0, x1=x1, y1=y1,
@@ -26,8 +30,9 @@ def make_hist(x, start=None, end=None, bin_size=None, name=None, show_legend=Tru
                         name=name, showlegend=show_legend)
 
 
-def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None, mode="markers",
-                 marker_size=5, col=None, col_scale=None, show_scale=True, name=None, show_legend=True):
+def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None,
+                 mode="markers", marker_size=5, col=None, col_scale=None, show_scale=True,
+                 name=None, show_legend=True):
     """Create a Plotly trace object of Scatter plot."""
     return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
                       hoverinfo="text" if text is not None else None,
@@ -43,12 +48,13 @@ def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None, 
 
 def make_layout(width=None, height=None, title=None, x_title=None, y_title=None,
                 x_range=None, y_range=None, x_grid=True, y_grid=True,
-                x_reversed=False, y_reversed=False, shapes=None):
+                x_zeroline=True, y_zeroline=True, x_reversed=False, y_reversed=False,
+                shapes=None):
     """Create a Plotly Layout object."""
     return go.Layout(width=width, height=height, hovermode="closest", title=title,
-                     xaxis=dict(title=x_title, showgrid=x_grid, range=x_range,
+                     xaxis=dict(title=x_title, showgrid=x_grid, zeroline=x_zeroline, range=x_range,
                                 autorange="reversed" if x_reversed else None),
-                     yaxis=dict(title=y_title, showgrid=y_grid, range=y_range,
+                     yaxis=dict(title=y_title, showgrid=y_grid, zeroline=y_zeroline, range=y_range,
                                 autorange="reversed" if y_reversed else None),
                      shapes=shapes)
 
