@@ -7,6 +7,21 @@ from BITS.plot.plotly import make_scatter, make_layout, show_plot
 from BITS.util.proc import run_command
 
 
+def canonical_kmer(kmer):
+    """Convert into a canonical k-mer."""
+    return min(kmer, revcomp_seq(kmer))
+
+
+def seq_to_forward_kmer_spectrum(seq, k):
+    """Return a set of FORWARD `k`-mers contained in `seq`."""
+    return set([seq[i:i + k] for i in range(len(seq) - k + 1)])
+
+
+def seq_to_canonical_kmer_spectrum(seq, k):
+    """Return a set of CANONICAL `k`-mers contained in `seq`."""
+    return set([canonical_kmer(seq[i:i + k]) for i in range(len(seq) - k + 1)])
+
+
 def create_meryl_db(fasta_fname, k, meryl_out):
     """Make a meryl k-mer database from the sequences in `fasta_fname`."""
     run_command(f"meryl count k={k} {fasta_fname} output {meryl_out}")
@@ -15,6 +30,7 @@ def create_meryl_db(fasta_fname, k, meryl_out):
 def count_kmers(fasta_fname, k, greater_than=0, lower=True, out_dir=".", out_fname=None):
     """Count `k`-mer contained in `fasta_fname` using meryl. Meryl must be installed.
     NOTE: large `k` value might cause segmentation fault of meryl.
+    NOTE: Meryl uses approximate counting. That is, some k-mers will not be counted.
     """
     assert isinstance(k, int), "k must be integer"
     if k % 2 == 0:
@@ -31,11 +47,6 @@ def count_kmers(fasta_fname, k, greater_than=0, lower=True, out_dir=".", out_fna
     return kmer_counts
 
 
-def canonical_kmer(kmer):
-    """Convert into a canonical k-mer."""
-    return min(kmer, revcomp_seq(kmer))
-
-
 def hist_kmer_counts(kmer_counts, min_count=1, max_count=100, log_scale=True):
     """X-axis is count of a k-mer, y-axis is frequency of k-mers having the count."""
     plt.hist(list(kmer_counts.values()), bins=max_count - min_count + 1,
@@ -44,7 +55,7 @@ def hist_kmer_counts(kmer_counts, min_count=1, max_count=100, log_scale=True):
     plt.show()
 
 
-def seq_to_count_spectrum(seq, kmer_counts):
+def seq_to_kmer_count_spectrum(seq, kmer_counts):
     """Convert a DNA sequence into a spectrum of positional k-mer counts, which represents
     repetitiveness and the degree of error of the k-mers, i.e., the positions."""
     k = len(next(iter(kmer_counts.keys())))
@@ -52,17 +63,17 @@ def seq_to_count_spectrum(seq, kmer_counts):
                      for i in range(len(seq) - k + 1)])
 
 
-def plot_spectrum(seq, kmer_counts, y_max=None):
+def plot_kmer_count_spectrum(seq, kmer_counts, y_max=None):
     """Plot the k-mer spectrum of `seq` according to `kmer_counts`."""
-    spectrum = seq_to_count_spectrum(seq, kmer_counts)
+    spectrum = seq_to_kmer_count_spectrum(seq, kmer_counts)
     show_plot([make_scatter(np.arange(len(spectrum)), spectrum,
                             marker_size=3, show_legend=False)],
               make_layout(y_range=None if y_max is None else (0, y_max)))
 
 
-def plot_spectrums(seqs, kmer_counts, y_max=None):
+def plot_kmer_count_spectrums(seqs, kmer_counts, y_max=None):
     """Plot the k-mer spectrum of `seqs` according to `kmer_counts`."""
-    spectrums = [seq_to_count_spectrum(seq, kmer_counts) for seq in seqs]
+    spectrums = [seq_to_kmer_count_spectrum(seq, kmer_counts) for seq in seqs]
     show_plot([make_scatter(np.arange(len(spectrum)), spectrum,
                             marker_size=3, name=f"Seq {i}")
                for i, spectrum in enumerate(spectrums)],

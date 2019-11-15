@@ -1,4 +1,5 @@
 from os.path import splitext
+from collections import Counter
 import plotly.offline as py
 import plotly.graph_objects as go
 
@@ -25,20 +26,50 @@ def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=1.,
 ######################################
 
 def make_hist(x, start=None, end=None, bin_size=None, name=None, show_legend=True):
-    """Create a Plotly trace object of Histogram plot."""
-    return go.Histogram(x=x, xbins=dict(start=start, end=end, size=bin_size),
-                        name=name, showlegend=show_legend)
+    """Create a Plotly trace object of Histogram plot using go.Bar instead of go.Histogram
+    because it puts the original data in a Notebook."""
+    counter = sorted(Counter(x).items())   # [(value, count)]
+    if start is None:
+        start = counter[0][0]
+    if end is None:
+        end = counter[-1][0]
+    start -= bin_size / 2
+    end += bin_size / 2
+
+    counts = []   # splitted to each bin
+    i = 0
+    while i < len(counter) and counter[i][0] < start:
+        i += 1
+    x_min = start
+    while i < len(counter):
+        x_max = x_min + bin_size
+        if x_max > end:
+            break
+        count = 0
+        while i < len(counter) and counter[i][0] < x_max:
+            count += counter[i][1]
+            i += 1
+        counts.append((round((x_min + x_max) / 2, 2), count))
+        x_min = x_max
+    return go.Bar(x=[x[0] for x in counts],
+                  y=[x[1] for x in counts],
+                  width=[bin_size for x in counts],
+                  name=name, showlegend=show_legend)
 
 
 def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None,
-                 mode="markers", marker_size=5, col=None, col_scale=None, show_scale=True,
+                 mode="markers", marker_size=5, line_width=1,
+                 col=None, col_scale=None, show_scale=True,
                  name=None, show_legend=True):
     """Create a Plotly trace object of Scatter plot."""
     return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
                       hoverinfo="text" if text is not None else None,
                       textposition=text_pos, textfont=dict(size=text_size, color=text_col),
-                      marker=dict(size=marker_size, color=col, colorscale=col_scale,
-                                  showscale=show_scale if col_scale is not None else None),
+                      marker=(None if mode == "lines" else
+                              dict(size=marker_size, color=col, colorscale=col_scale,
+                                   showscale=show_scale if col_scale is not None else None)),
+                      line=(None if mode == "markers" else
+                            dict(width=line_width, color=col)),
                       showlegend=show_legend)
 
 

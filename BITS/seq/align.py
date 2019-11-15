@@ -24,7 +24,7 @@ class Alignment:
                 f"({self.length} bp, {round(100 * self.diff, 2)}% diff)")
 
     def mapped_seq(self, target):
-        """Returns the substring of <target> (as forward sequence) alignd to the query."""
+        """Returns the substring of `target` (as forward sequence) alignd to the query."""
         ret = (target[self.t_start:self.t_end] if self.t_start != self.t_end
                else target[self.t_start:] + target[:self.t_start])   # accept only global for cyclic
         if self.strand == 1:
