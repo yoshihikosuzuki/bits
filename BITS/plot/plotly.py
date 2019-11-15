@@ -57,6 +57,38 @@ def make_hist(x, start=None, end=None, bin_size=None, name=None, show_legend=Tru
                   name=name, showlegend=show_legend)
 
 
+def make_hist_from_counter(counter, start=None, end=None, bin_size=None, name=None, show_legend=True):
+    """Create a Plotly trace object of Histogram plot using go.Bar instead of go.Histogram
+    because it puts the original data in a Notebook."""
+    counter = sorted(counter)   # [(value, count)]
+    if start is None:
+        start = counter[0][0]
+    if end is None:
+        end = counter[-1][0]
+    start -= bin_size / 2
+    end += bin_size / 2
+
+    counts = []   # splitted to each bin
+    i = 0
+    while i < len(counter) and counter[i][0] < start:
+        i += 1
+    x_min = start
+    while i < len(counter):
+        x_max = x_min + bin_size
+        if x_max > end:
+            break
+        count = 0
+        while i < len(counter) and counter[i][0] < x_max:
+            count += counter[i][1]
+            i += 1
+        counts.append((round((x_min + x_max) / 2, 2), count))
+        x_min = x_max
+    return go.Bar(x=[x[0] for x in counts],
+                  y=[x[1] for x in counts],
+                  width=[bin_size for x in counts],
+                  name=name, showlegend=show_legend)
+
+
 def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None,
                  mode="markers", marker_size=5, line_width=1,
                  col=None, col_scale=None, show_scale=True,
