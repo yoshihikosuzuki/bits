@@ -83,20 +83,20 @@ class EdlibRunner:
                 aln.t_start -= len(target)
         if aln.t_end != aln.t_start:   # adjust start/end positions if the mapping is not global
             # If the mapping is short, set `aln.t_start` to start=end position and re-calculate alignment.
-            aln_s = self._realign_cyclic(query, target, aln.t_start, aln.strand)
+            aln_s = self._realign_cyclic(query, target, aln.t_start)
             # If the mapping is redundant, check which of `aln.t_start` and `aln.t_end` is better for
             # start=end position of the alignment
             if aln.t_start < aln.t_end:
-                aln_e = self._realign_cyclic(query, target, aln.t_end, aln.strand)
+                aln_e = self._realign_cyclic(query, target, aln.t_end)
                 if aln_s.diff > aln_e.diff:
                     aln_s = aln_e
             aln = aln_s
 
         return aln
 
-    def _realign_cyclic(self, query, target, start_pos, strand):
+    def _realign_cyclic(self, query, target, start_pos):
         """Realign `query` globally assuming `target` starts from and end at `start_pos` cyclically."""
-        aln = self._run(query, target[start_pos:] + target[:start_pos], strand)
+        aln = self._run(query, target[start_pos:] + target[:start_pos], 0)
         aln.t_start = start_pos if start_pos != len(target) else 0
         aln.t_end = start_pos if start_pos != 0 else len(target)
         return aln

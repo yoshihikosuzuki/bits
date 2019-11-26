@@ -26,6 +26,12 @@ def make_rect(x0, y0, x1, y1, xref="x", yref="y", fill_col="grey", opacity=1.,
 ######################################
 
 def make_hist(x, start=None, end=None, bin_size=None, name=None, show_legend=True):
+    """Create a Plotly trace object of Histogram plot."""
+    return go.Histogram(x=x, xbins=dict(start=start, end=end, size=bin_size),
+                        name=name, showlegend=show_legend)
+
+
+def make_hist_by_barplot(x, start=None, end=None, bin_size=None, name=None, show_legend=True):
     """Create a Plotly trace object of Histogram plot using go.Bar instead of go.Histogram
     because it puts the original data in a Notebook."""
     counter = sorted(Counter(x).items())   # [(value, count)]
@@ -91,7 +97,7 @@ def make_hist_from_counter(counter, start=None, end=None, bin_size=None, name=No
 
 def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None,
                  mode="markers", marker_size=5, line_width=1,
-                 col=None, col_scale=None, show_scale=True,
+                 col=None, col_scale=None, reverse_scale=False, show_scale=True,
                  name=None, show_legend=True):
     """Create a Plotly trace object of Scatter plot."""
     return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
@@ -99,6 +105,7 @@ def make_scatter(x, y, text=None, text_pos=None, text_size=None, text_col=None,
                       textposition=text_pos, textfont=dict(size=text_size, color=text_col),
                       marker=(None if mode == "lines" else
                               dict(size=marker_size, color=col, colorscale=col_scale,
+                                   reversescale=reverse_scale,
                                    showscale=show_scale if col_scale is not None else None)),
                       line=(None if mode == "markers" else
                             dict(width=line_width, color=col)),

@@ -9,18 +9,23 @@ from .io import save_fasta
 @dataclass(repr=False, eq=False)
 class DotPlot:
     """Draw dot plot between 2 strings or fasta files using Gepard."""
-    gepard  : str   # path to the Gepard jar executable file
-    out_dir : str = "tmp"   # directory to temporarily put fasta and png files
+    gepard    : str           # path to the Gepard jar executable file
+    fig_size  : int = 750
+    plot_size : int = 11
+    word_size : int = 10
+    out_dir   : str = "tmp"   # directory to temporarily put fasta and png files
 
     def __post_init__(self):
         run_command(f"mkdir -p {self.out_dir}")
         self.out_fname = join(self.out_dir, "dotplot.png")
 
     def _plot(self, a_fname, b_fname):
-        run_command(" ".join([f"unset DISPLAY;",
+        run_command(' '.join([f"unset DISPLAY;",
                               f"{self.gepard} -seq1 {a_fname} -seq2 {b_fname}",
+                              f"-maxwidth {self.fig_size} -maxheight {self.fig_size}",
+                              f"-word {self.word_size}",
                               f"-outfile {self.out_fname}"]))
-        fig, ax = plt.subplots(figsize=(11, 11))
+        fig, ax = plt.subplots(figsize=(self.plot_size, self.plot_size))
         ax.tick_params(labelbottom=False, bottom=False)
         ax.tick_params(labelleft=False, left=False)
         plt.imshow(img.imread(self.out_fname))
