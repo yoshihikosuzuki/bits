@@ -12,31 +12,24 @@ $ python3.7 setup.py install
 
 ## How to use
 
-For details, **see [this Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb)** providing description of the modules and some examples.
-
-### Basic usage
-
-Import what you want:
+Import and use any function/class you like:
 
 ```python
-from BITS.seq.utils import revcomp
+> from BITS.seq.utils import revcomp_seq
+> print(revcomp_seq('aactg'))
 ```
-
-And use it:
-
-```python
-print(revcomp('aactg'))
-```
-
-Then you will get the result:
 
 ```ini
 cagtt
 ```
 
-### Short description on the modules
+## Modules and functions/classes
 
-- `BITS.clustering`: Classes for clustering of numerical and sequence data.
-- `BITS.plot`: Utility functions for Plotly, enabling much simpler codes.
-- `BITS.seq`: Alignment using edlib, dot plot using Gepard, and functions for CIGAR string and other sequence manipulations.
-- `BITS.util`: Others including utilities for pickle, subprocess, pyinterval, shell command execution, and job scheduler.
+|Module|Description|
+|:-:|:-:|
+|`BITS.clustering`|clustering of numerical and sequence data|
+|`BITS.plot`|utilities for Plotly|
+|`BITS.seq`|alignment, dot plot, cigar, etc.|
+|`BITS.util`|pickle, subprocess, multiprocessing, pyinterval, job scheduler, etc.|
+
+This [Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb) provides description of each function/class.
