@@ -71,14 +71,14 @@ def make_hist(data: Union[Sequence, Mapping[Any, int]],
     if isinstance(data, Mapping) or not isinstance(next(iter(data)), Number):
         counter = Counter(data) if isinstance(data, Sequence) else data
         return go.Bar(**dict(zip(('x', 'y'), zip(*counter.items()))),
-                      name=name, showlegend=show_legend)
+                      width=bin_size, name=name, showlegend=show_legend)
 
     if start is None:
         start = min(data)
     if end is None:
         end = max(data)
     if bin_size is not None:
-        bin_num = int(np.ceil(end - start) / bin_size)
+        bin_num = -int(-(end - start) // bin_size)
     bin_size = (end - start) / bin_num
 
     counts, bin_edges = np.histogram(data, range=(start, end), bins=bin_num)
