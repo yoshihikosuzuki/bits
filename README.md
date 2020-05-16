@@ -15,7 +15,7 @@ $ python3.7 setup.py install
 Import and use any function/class you like:
 
 ```python
-> from BITS.seq.utils import revcomp_seq
+> from BITS.seq.util import revcomp_seq
 > print(revcomp_seq('aactg'))
 ```
 
@@ -29,7 +29,7 @@ cagtt
 | :---------------: | :------------------------------------------------------------------: |
 | `BITS.clustering` |              clustering of numerical and sequence data               |
 |    `BITS.plot`    |                         utilities for Plotly                         |
-|    `BITS.seq`     |                   alignment, dot plot, cigar, etc.                   |
+|    `BITS.seq`     |              fastx io, alignment, dot plot, cigar, etc.              |
 |    `BITS.util`    | pickle, subprocess, multiprocessing, pyinterval, job scheduler, etc. |
 
 This [Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb) provides description of each function/class.
