@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import edlib
-from .utils import revcomp_seq
+from .util import revcomp_seq
 from .cigar import Cigar
 
 edlib_mode = {"global": "NW", "glocal": "HW", "prefix": "SHW"}

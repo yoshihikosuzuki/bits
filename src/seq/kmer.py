@@ -2,7 +2,7 @@ from collections import Counter
 import numpy as np
 import matplotlib.pyplot as plt
 from logzero import logger
-from .utils import revcomp_seq
+from .util import revcomp_seq
 from BITS.plot.plotly import make_scatter, make_layout, show_plot
 from BITS.util.proc import run_command
 
