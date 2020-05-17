@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterator, Tuple
 
-CIGAR_CHARS = {'=', 'X', 'I', 'D', 'M', 'N'}
+CIGAR_CHARS = {'=', 'X', 'I', 'D'}
 
 
 class Cigar(str):
