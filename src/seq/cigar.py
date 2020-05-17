@@ -1,103 +1,102 @@
-from dataclasses import dataclass
+from __future__ import annotations
+from typing import Iterator, Tuple
 
-CIGAR_CHAR = set(["=", "D", "I", "X", "N"])
+CIGAR_CHARS = {'=', 'X', 'I', 'D', 'M', 'N'}
 
 
-@dataclass(repr=False)
-class Cigar:
-    string: str
+class Cigar(str):
+    """A class for a CIGAR string that can be treated as a str.
 
-    def __str__(self):
-        return self.string
+    usage:
+      > cigar = Cigar("15=1X2D3=")
+      > cigar
+      '15=1X2D3='
+      > list(cigar)
+      [(15, '='), (1, 'X'), (2, 'D'), (3, '=')]
+      > for l, op in cigar:
+      >     print(l, op)
+      15 =
+      1 X
+      2 D
+      3 =
 
-    def __iter__(self):
-        self._objs = []   # list of the tuples (count, cigar) in <self.string>
-        count = ""
-        for c in self.string:
-            if c in CIGAR_CHAR:
-                self._objs.append((int(count), c))
-                count = ""
+    positional arguments:
+      @ cigar <str> : CIGAR string
+    """
+
+    def __new__(cls, cigar: str) -> str:
+        return str.__new__(cls, cigar)
+
+    def __iter__(self) -> Iterator[Tuple[int, str]]:
+        """Iterator over tuples of length and operation."""
+        length = ""
+        for c in super().__iter__():
+            if c in CIGAR_CHARS:
+                yield (int(length), c)
+                length = ""
             else:
-                count += c
-        self._i = 0   # index of <self._objs>
-        return self
+                length += c
 
-    def __next__(self):
-        if self._i == len(self._objs):
-            raise StopIteration()
-        ret = self._objs[self._i]
-        self._i += 1
-        return ret
+    def __reversed__(self) -> Iterator[Tuple[int, str]]:
+        """Used for reverse or reverse complement."""
+        yield from reversed(list(self))
 
     @property
-    def alignment_len(self):
-        """Alignment length including gaps and masked regions."""
-        return sum([l for l, c in self])
+    def aln_length(self) -> int:
+        """Alignment length including gaps."""
+        return sum([l for l, _ in self])
 
-    def reverse(self):
-        """Just reverse CIGAR without swapping in/del. Used for reverse complement."""
-        return "".join(reversed([f"{l}{c}" for l, c in self]))
+    def reverse(self) -> Cigar:
+        """Reverse CIGAR without swapping I/D. Used for reverse complement."""
+        return Cigar(''.join(map(lambda x: ''.join(map(str, x)), reversed(self))))
 
-    def swap_indel(self):
-        """Swap I and D. This inverts the role of query and target."""
-        self.string = self.string.replace("I", "?").replace("D", "I").replace("?", "D")
+    def revcomp(self) -> Cigar:
+        return self.reverse()
 
-    def flatten(self):
-        """Convert to a sequence of the operations."""
-        return FlattenCigar("".join([c for l, c in self for i in range(l)]))
+    def swap_indel(self) -> Cigar:
+        """Swap I and D. This swaps the role of query and target."""
+        return Cigar(self.replace('I', '?').replace('D', 'I').replace('?', 'D'))
 
-    def mask_intvl(self, intvl, ignore_op="D"):   # TODO: refactor
-        # TODO: how to do about I/D/X around intervals" boundaries
-
-        cigar_f = self.flatten()
-    
-        starts = [i[0] for i in intvl]
-        ends = [i[1] for i in intvl]
-        index = 0
-        pos = 0
-        for i, c in enumerate(cigar_f):
-            if index >= len(starts):
-                break
-            if i != 0 and c != ignore_op:
-                pos += 1
-            if pos > ends[index]:
-                index += 1
-            if index < len(starts) and starts[index] <= pos and pos <= ends[index]:   # NOTE: end-inclusive
-                cigar_f[i] = "N"
-
-        return cigar_f.unflatten()
+    def flatten(self) -> FlattenCigar:
+        """Convert to a flatten CIGAR, a sequence of each operation."""
+        return FlattenCigar(''.join([op * l for l, op in self]))
 
 
-@dataclass(repr=False)
-class FlattenCigar:
-    """Class for representing CIGAR as a sequence of operations, which is easier to handle."""
-    string: str
+class FlattenCigar(str):
+    """A class for a flatten CIGAR string that can be treated as a str.
+    This is easier to handle than Cigar.
 
-    def __str__(self):
-        return self.string
+    usage:
+      > cigar = Cigar("15=1X2D3=")
+      > fcigar = cigar.flatten()
+      > fcigar
+      '===============XDD==='
+      > fcigar.unflatten()
+      '15=1X2D3='
 
-    def __iter__(self):
-        self._i = 0
-        return self
+    positional arguments:
+      @ fcigar <str> : A flatten CIGAR string
+    """
 
-    def __next__(self):
-        if self._i == len(self.string):
-            raise StopIteration()
-        ret = self.string[self._i]
-        self._i += 1
-        return ret
+    def __new__(cls, fcigar: str) -> str:
+        return str.__new__(cls, fcigar)
 
-    def unflatten(self):
-        """Convert to the normal CIGAR string."""
+    @property
+    def aln_length(self) -> int:
+        """Implemented just for consistency with Cigar."""
+        return len(self)
+
+    def unflatten(self) -> Cigar:
+        """Convert to a normal CIGAR string."""
         cigar = ""
-        count = 0
-        prev_c = self.string[0]
-        for c in self.string:
+        length = 0
+        prev_c = self[0]
+        for c in self:
             if c == prev_c:
-                count += 1
+                length += 1
             else:
-                cigar += f"{count}{prev_c}"
-                count = 1
+                cigar += f"{length}{prev_c}"
+                length = 1
                 prev_c = c
-        cigar += f"{count}{prev_c}"
+        cigar += f"{length}{prev_c}"
         return Cigar(cigar)

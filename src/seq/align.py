@@ -9,14 +9,14 @@ edlib_mode = {"global": "NW", "glocal": "HW", "prefix": "SHW"}
 @dataclass(repr=False, eq=False)
 class Alignment:
     """query == `cigar`(`strand`(target[`t_start`:`t_end`]))"""
-    q_start : int   = None
-    q_end   : int   = None
-    t_start : int   = None
-    t_end   : int   = None
-    strand  : int   = 0      # 0 or 1
-    length  : int   = None
-    diff    : float = None
-    cigar   : Cigar = None
+    q_start: int = None
+    q_end: int = None
+    t_start: int = None
+    t_end: int = None
+    strand: int = 0      # 0 or 1
+    length: int = None
+    diff: float = None
+    cigar: Cigar = None
 
     def __repr__(self):
         return (f"q[{self.q_start}:{self.q_end}] vs "
@@ -50,13 +50,14 @@ class EdlibRunner:
       @ cyclic       <bool> [True]  : If `True`, perform cyclic alignment. `mode` must be `global`.
       @ strand_prior <int>  [0]     : Prior information on the strand. Must be 0 or 1.
     """
-    mode          : str
-    revcomp       : bool  = True
-    cyclic        : bool  = False
-    strand_prior  : int   = 0
+    mode: str
+    revcomp: bool = True
+    cyclic: bool = False
+    strand_prior: int = 0
 
     def __post_init__(self):
-        assert self.mode in edlib_mode.keys(), f"Invalid mode name: {self.mode}"
+        assert self.mode in edlib_mode.keys(
+        ), f"Invalid mode name: {self.mode}"
         assert self.revcomp or self.strand_prior == 0, "`strand_prior` must be 0 when `revcomp=False`"
         assert not self.cyclic or self.mode == "global", "Only global mode is allowed for cyclic alignment"
 
@@ -65,7 +66,8 @@ class EdlibRunner:
         aln = (self._find_best_alignment(query, target) if not self.cyclic
                else self._align_cyclic(query, target))
         if aln.strand == 1:
-            aln.t_start, aln.t_end = len(target) - aln.t_end, len(target) - aln.t_start
+            aln.t_start, aln.t_end = len(
+                target) - aln.t_end, len(target) - aln.t_start
         return aln
 
     def _align_cyclic(self, query, target):

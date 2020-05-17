@@ -17,6 +17,7 @@ class Overlap:
     b_end: int
     length: int
     diff: float
+    cigar: Optional[Cigar]
 
     def __post_init__(self):
         assert self.strand in (0, 1), "`strand` must be 0/1"
