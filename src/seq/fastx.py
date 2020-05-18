@@ -1,20 +1,29 @@
 from dataclasses import dataclass
 from typing import List, Sequence
+import numpy as np
 from logzero import logger
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
-from .util import split_seq
+from .util import split_seq, ascii_to_phred
 
 
-@dataclass(frozen=True)
+@dataclass(eq=False)
 class FastaRecord:
     name: str
     seq: str
 
+    @property
+    def length(self):
+        return len(self.seq)
 
-@dataclass(frozen=True)
+
+@dataclass(eq=False)
 class FastqRecord(FastaRecord):
     qual: str
+
+    @property
+    def qual_phred(self) -> np.ndarray:
+        return np.array(list(map(ascii_to_phred, self.qual)), dtype=np.int8)
 
 
 def load_fasta(in_fname: str, case: str = "original") -> List[FastaRecord]:

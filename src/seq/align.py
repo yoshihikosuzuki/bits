@@ -25,8 +25,8 @@ class Alignment:
     a_seq: Optional[Any] = None
     b_seq: Optional[Any] = None
     strand: int = 0
-    a_start: Optional[int] = None
     apply_strand_first: bool = True
+    a_start: Optional[int] = None
     a_end: Optional[int] = None
     a_len: Optional[int] = None
     b_start: Optional[int] = None
@@ -152,17 +152,13 @@ class EdlibRunner:
     optional arguments:
       @ revcomp      : If True, find reverse complement alignment as well.
       @ cyclic       : If True, perform cyclic alignment (`mode` must be `global`).
-      @ strand_prior : Prior information on the strand. Must be 0 or 1.
     """
     mode: str   # TODO: "proper" mode?
     revcomp: bool = True
     cyclic: bool = False
-    strand_prior: int = 0
 
     def __post_init__(self):
         assert self.mode in EDLIB_MODE, f"Invalid mode: {self.mode}"
-        assert self.revcomp or self.strand_prior == 0, \
-            "`strand_prior` must be 0 when `revcomp` is False"
         assert not self.cyclic or self.mode == "global", \
             "Only global mode is supported for cyclic alignment"
 
@@ -173,9 +169,9 @@ class EdlibRunner:
 
     def _align(self, query: str, target: str) -> Alignment:
         """Find best alignment with diff, cosidering strand if needed."""
-        aln = self._run_edlib(query, target, self.strand_prior)
+        aln = self._run_edlib(query, target, 0)
         if self.revcomp:
-            aln2 = self._run_edlib(query, target, 1 - self.strand_prior)
+            aln2 = self._run_edlib(query, target, 1)
             if aln.diff > aln2.diff:
                 aln = aln2
         return aln

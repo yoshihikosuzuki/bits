@@ -17,19 +17,19 @@ class DotPlot:
       > dp.plot(seq1, seq2)
 
     positional variables:
-      @ gepard_jar <str> : Path to a jar executable of Gepard.
-      @ gepard_mat <str> : Path to a score matrix of Gepard.
+      @ gepard_jar : Path to a jar executable of Gepard.
+      @ gepard_mat : Path to a score matrix of Gepard.
 
     optional variables:
-      @ out_dir   <str> ["tmp"] : Directory for generating fasta files and plots.
+      @ tmp_dir : Directory for generating fasta files and plots.
     """
     gepard_jar: InitVar[str]
     gepard_mat: InitVar[str]
     gepard: str = field(init=False)
-    out_dir: str = "tmp"
+    tmp_dir: str = "dotplot_tmp"
 
     def __post_init__(self, gepard_jar, gepard_mat):
-        run_command(f"mkdir -p {self.out_dir}")
+        run_command(f"mkdir -p {self.tmp_dir}")
         self.gepard = ' '.join([f"java -cp {gepard_jar}",
                                 f"org.gepard.client.cmdline.CommandLine",
                                 f"-matrix {gepard_mat}"])
@@ -76,13 +76,13 @@ class DotPlot:
                                           else f"{prolog}/0/0_{len(seq)}"),
                                     seq=(seq.seq if isinstance(seq, FastaRecord)
                                          else seq))],
-                       join(self.out_dir, f"{prolog}.fasta"))
+                       join(self.tmp_dir, f"{prolog}.fasta"))
 
         if not from_fasta:
             _prep(a_seq, a_name, 'a')
             _prep(b_seq, b_name, 'b')
-        self._plot(a_seq if from_fasta else join(self.out_dir, "a.fasta"),
-                   b_seq if from_fasta else join(self.out_dir, "b.fasta"),
+        self._plot(a_seq if from_fasta else join(self.tmp_dir, "a.fasta"),
+                   b_seq if from_fasta else join(self.tmp_dir, "b.fasta"),
                    (out_fname if out_fname is not None
-                    else join(self.out_dir, "dotplot.png")),
+                    else join(self.tmp_dir, "dotplot.png")),
                    word_size, fig_size, plot_size)
