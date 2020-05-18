@@ -117,7 +117,7 @@ def make_scatter(x: Sequence,
                         Format is: "[top|middle|bottom] [left|center|right]".
       @ text_size     : Size of `text`.
       @ text_col      : Color of `text`.
-      @ mode          : Must be "markers", "lines", or "markers+lines".
+      @ mode          : "markers", "lines", "markers+lines", "text", etc.
       @ marker_size   : For "markers" mode.
       @ line_width    : For "lines" mode.
       @ col           : Color of markers and lines.
@@ -130,8 +130,6 @@ def make_scatter(x: Sequence,
     assert len(x) == len(y), "`x` and `y` must have same size"
     if text is not None:
         assert len(x) == len(text), "`text` must have same size as data"
-    assert mode in ("markers", "lines", "markers+lines"), \
-        "`mode` must be one of {'markers', 'lines', 'markers+lines'}"
     return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
                       hoverinfo="text" if text is not None else None,
                       textposition=text_pos,

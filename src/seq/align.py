@@ -201,17 +201,17 @@ class EdlibRunner:
         if aln.strand == 1:
             target = revcomp_seq(target)
 
-        if aln.t_end > len(target):   # adjust the positions to the original coordinates
-            aln.t_end -= len(target)
-            if aln.t_start >= len(target):
-                aln.t_start -= len(target)
-        if aln.t_end != aln.t_start:   # adjust start/end positions if the mapping is not global
-            # If the mapping is short, set `aln.t_start` to start=end position and re-calculate alignment.
-            aln_s = self._realign_cyclic(query, target, aln.t_start)
-            # If the mapping is redundant, check which of `aln.t_start` and `aln.t_end` is better for
+        if aln.b_end > len(target):   # adjust the positions to the original coordinates
+            aln.b_end -= len(target)
+            if aln.b_start >= len(target):
+                aln.b_start -= len(target)
+        if aln.b_end != aln.b_start:   # adjust start/end positions if the mapping is not global
+            # If the mapping is short, set `aln.b_start` to start=end position and re-calculate alignment.
+            aln_s = self._realign_cyclic(query, target, aln.b_start)
+            # If the mapping is redundant, check which of `aln.b_start` and `aln.b_end` is better for
             # start=end position of the alignment
-            if aln.t_start < aln.t_end:
-                aln_e = self._realign_cyclic(query, target, aln.t_end)
+            if aln.b_start < aln.b_end:
+                aln_e = self._realign_cyclic(query, target, aln.b_end)
                 if aln_s.diff > aln_e.diff:
                     aln_s = aln_e
             aln = aln_s
@@ -220,8 +220,10 @@ class EdlibRunner:
 
     def _realign_cyclic(self, query: str, target: str, start_pos: int) -> Alignment:
         """Realign `query` globally assuming `target` starts from and end at `start_pos` cyclically."""
-        aln = self._run_edlib(
-            query, target[start_pos:] + target[:start_pos], 0)
-        aln.t_start = start_pos if start_pos != len(target) else 0
-        aln.t_end = start_pos if start_pos != 0 else len(target)
-        return aln
+        aln = self._run_edlib(query, target[start_pos:] + target[:start_pos], 0)
+        return Alignment(a_seq=aln.a_seq, b_seq=aln.b_seq, strand=aln.strand,
+                         a_start=aln.a_start, a_end=aln.a_end, a_len=aln.a_len,
+                         b_start=start_pos if start_pos != len(target) else 0,
+                         b_end=start_pos if start_pos != 0 else len(target),
+                         b_len=aln.b_len,
+                         length=aln.length, diff=aln.diff, cigar=aln.cigar)
