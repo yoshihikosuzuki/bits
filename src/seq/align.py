@@ -160,12 +160,11 @@ class EdlibRunner:
     def __post_init__(self):
         assert self.mode in EDLIB_MODE, f"Invalid mode: {self.mode}"
         assert not self.cyclic or self.mode == "global", \
-            "Only global mode is supported for cyclic alignment"
+            "Currently only global mode is supported for cyclic alignment"
 
     def align(self, query: str, target: str) -> Alignment:
         """Align `query` to `target`."""
-        return (self._align_cyclic if self.cyclic
-                else self._align)(query, target)
+        return (self._align_cyclic if self.cyclic else self._align)(query, target)
 
     def _align(self, query: str, target: str) -> Alignment:
         """Find best alignment with diff, cosidering strand if needed."""
@@ -181,13 +180,21 @@ class EdlibRunner:
         Multiple alignments with the same edit distance can exist, but here report only
         the first one.
         """
-        e = edlib.align(query, target if strand == 0 else revcomp_seq(target),
-                        mode=EDLIB_MODE[self.mode], task="path")
+        e = edlib.align(query,
+                        target if strand == 0 else revcomp_seq(target),
+                        mode=EDLIB_MODE[self.mode],
+                        task="path")
         start, end = e["locations"][0]
         cigar = Cigar(e["cigar"])
-        return Alignment(a_seq=query, b_seq=target, strand=strand,
-                         a_start=0, a_end=len(query), a_len=len(query),
-                         b_start=start, b_end=end + 1, b_len=len(target),
+        return Alignment(a_seq=query,
+                         b_seq=target,
+                         strand=strand,
+                         a_start=0,
+                         a_end=len(query),
+                         a_len=len(query),
+                         b_start=start,
+                         b_end=end + 1,
+                         b_len=len(target),
                          length=cigar.aln_length,
                          diff=e["editDistance"] / cigar.aln_length,
                          cigar=cigar)
@@ -220,10 +227,18 @@ class EdlibRunner:
 
     def _realign_cyclic(self, query: str, target: str, start_pos: int) -> Alignment:
         """Realign `query` globally assuming `target` starts from and end at `start_pos` cyclically."""
-        aln = self._run_edlib(query, target[start_pos:] + target[:start_pos], 0)
-        return Alignment(a_seq=aln.a_seq, b_seq=aln.b_seq, strand=aln.strand,
-                         a_start=aln.a_start, a_end=aln.a_end, a_len=aln.a_len,
+        aln = self._run_edlib(query,
+                              target[start_pos:] + target[:start_pos],
+                              0)
+        return Alignment(a_seq=aln.a_seq,
+                         b_seq=aln.b_seq,
+                         strand=aln.strand,
+                         a_start=aln.a_start,
+                         a_end=aln.a_end,
+                         a_len=aln.a_len,
                          b_start=start_pos if start_pos != len(target) else 0,
                          b_end=start_pos if start_pos != 0 else len(target),
                          b_len=aln.b_len,
-                         length=aln.length, diff=aln.diff, cigar=aln.cigar)
+                         length=aln.length,
+                         diff=aln.diff,
+                         cigar=aln.cigar)

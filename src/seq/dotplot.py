@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
 from BITS.plot.matplotlib import show_image
 from BITS.util.proc import run_command
-from .fastx import FastaRecord, save_fasta
+from .io import FastaRecord, save_fasta
 
 
 @dataclass(repr=False, eq=False)
