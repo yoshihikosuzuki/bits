@@ -1,9 +1,7 @@
 from typing import Any, Union, Optional, Sequence, Mapping, Tuple, List, Dict
 from numbers import Number
-from os.path import splitext
 from collections import Counter
 import numpy as np
-import plotly.offline as py
 import plotly.graph_objects as go
 from plotly.basedatatypes import BaseTraceType
 
@@ -145,6 +143,10 @@ def make_scatter(x: Sequence,
 
 def make_layout(width: Optional[int] = None,
                 height: Optional[int] = None,
+                font: str = "Arial",
+                font_size_title: int = 20,
+                font_size_axis_title: int = 18,
+                font_size_axis_tick: int = 15,
                 title: Optional[str] = None,
                 x_title: Optional[str] = None,
                 y_title: Optional[str] = None,
@@ -162,6 +164,9 @@ def make_layout(width: Optional[int] = None,
     optional arguments:
       @ width      : Width of the plot.
       @ height     : Height of the plot.
+      @ font       : Font of (axis) titles.
+      @ font_size_[title|axis_title|axis_tick]
+                   : Font size of title/[x|y]_title/[x|y]_tick.
       @ title      : Title of the plot.
       @ x_title    : Title of x-axis of the plot.
       @ y_title    : Title of y-axis of the plot.
@@ -175,37 +180,54 @@ def make_layout(width: Optional[int] = None,
       @ y_reversed : Reverse y-axis if True.
       @ shapes     : List of non-interactive shape objects.
     """
-    return go.Layout(width=width, height=height, hovermode="closest", title=title,
-                     xaxis=dict(title=x_title, showgrid=x_grid, zeroline=x_zeroline,
+    return go.Layout(width=width, height=height,
+                     hovermode="closest",
+                     title=dict(text=title, font=dict(family=font,
+                                                      size=font_size_title,
+                                                      color="black")),
+                     xaxis=dict(title=dict(text=x_title,
+                                           font=dict(family=font,
+                                                     size=font_size_axis_title,
+                                                     color="black")),
+                                tickfont=dict(family="Arial",
+                                              size=font_size_axis_tick,
+                                              color="black"),
+                                showgrid=x_grid, zeroline=x_zeroline,
                                 range=x_range,
                                 autorange="reversed" if x_reversed else None),
-                     yaxis=dict(title=y_title, showgrid=y_grid, zeroline=y_zeroline,
+                     yaxis=dict(title=dict(text=y_title,
+                                           font=dict(family=font,
+                                                     size=font_size_axis_title,
+                                                     color="black")),
+                                tickfont=dict(family="Arial",
+                                              size=font_size_axis_tick,
+                                              color="black"),
+                                showgrid=y_grid, zeroline=y_zeroline,
                                 range=y_range,
                                 autorange="reversed" if y_reversed else None),
                      shapes=shapes)
 
 
-def show_plot(trace_list: Union[BaseTraceType, List[BaseTraceType]],
+def show_plot(traces: Union[BaseTraceType, List[BaseTraceType]],
               layout: Optional[go.Layout] = None,
-              out_fname: Optional[str] = None,
-              include_plotlyjs: bool = False):
-    """Plot a figure in Jupyter Notebook and/or to `out_fname`.
+              download_as: str = "svg",
+              out_html: Optional[str] = None,
+              embed_plotlyjs: bool = True):
+    """Plot a figure in Jupyter Notebook.
 
     positional arguments:
-      @ trace_list : A trace or list of traces.
+      @ traces : A trace or list of traces.
 
     optional arguments:
-      @ layout           : A layout object.
-      @ out_fname        : Output file name. Extension must be [png|jpeg|svg|html].
-      @ include_plotlyjs : Embed JS codes for an independent plot if True.
+      @ layout         : A layout object.
+      @ download_as    : File format of the "Download plot" buttion in the plot.
+      @ out_html       : Output the plot to an html file.
+      @ embed_plotlyjs : If True, embed plotly.js codes (~3 MB) in `out_html`.
     """
-    out_type = None if out_fname is None else splitext(out_fname)[-1][1:]
-    assert out_type is None or out_type in ("png", "jpeg", "svg", "html"), \
-        "Unsupported output file type"
-
-    fig = go.Figure(data=trace_list,
-                    layout=make_layout() if layout is None else layout)
-    py.iplot(fig, image=out_type if out_type != "html" else None,
-             filename=None if out_fname is None else splitext(out_fname)[0])
-    if out_type == "html":
-        fig.write_html(file=out_fname, include_plotlyjs=include_plotlyjs)
+    assert download_as in ("png", "jpeg", "svg"), \
+        f"Unsupported output file type: {download_as}"
+    fig = go.Figure(data=traces,
+                    layout=layout if layout is not None else make_layout())
+    fig.show(config=dict(toImageButtonOptions=dict(format=download_as)))
+    if out_html is not None:
+        fig.write_html(file=out_html, include_plotlyjs=embed_plotlyjs)
