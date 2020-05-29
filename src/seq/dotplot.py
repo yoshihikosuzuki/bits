@@ -26,17 +26,22 @@ class DotPlot:
     gepard_jar: InitVar[str]
     gepard_mat: InitVar[str]
     gepard: str = field(init=False)
-    tmp_dir: str = "dotplot_tmp"
+    tmp_dir: str = "tmp"
 
     def __post_init__(self, gepard_jar, gepard_mat):
         run_command(f"mkdir -p {self.tmp_dir}")
         self.gepard = ' '.join([f"java -cp {gepard_jar}",
-                                f"org.gepard.client.cmdline.CommandLine",
+                                "org.gepard.client.cmdline.CommandLine",
                                 f"-matrix {gepard_mat}"])
 
-    def _plot(self, a_fname: str, b_fname: str, out_fname: str,
-              word_size: int, fig_size: int, plot_size: int):
-        run_command(' '.join([f"unset DISPLAY;",
+    def _plot(self,
+              a_fname: str,
+              b_fname: str,
+              out_fname: str,
+              word_size: int,
+              fig_size: int,
+              plot_size: int):
+        run_command(' '.join(["unset DISPLAY;",
                               f"{self.gepard}",
                               f"-seq1 {a_fname}",
                               f"-seq2 {b_fname}",
@@ -59,16 +64,15 @@ class DotPlot:
         """Draw a dot plot between two sequences.
 
         positional arguments:
-          @ [a|b]_seq <str|Type[FastaRecord]> : Sequence, FastaRecord instance,
-                                                or fasta file name.
+          @ [a|b]_seq : Sequence, FastaRecord, or fasta file name.
 
         optional arguments:
-          @ from_fasta <bool>     [False] : `[a|b]_seq` are fasta file names.
-          @ [a|b]_name <str|None> [None]  : Display names of the sequences in the plot.
-          @ out_fname  <str|None> [None]  : Output file name of the dot plot.
-          @ word_size  <int>      [10]    : Word size for Gepard.
-          @ fig_size   <int>      [750]   : Size of the png file of the dot plot.
-          @ plot_size  <int>      [11]    : Display size of the plot in Jupyter.
+          @ from_fasta : `[a|b]_seq` are fasta file names.
+          @ [a|b]_name : Display names of the sequences in the plot.
+          @ out_fname  : Output file name of the dot plot.
+          @ word_size  : Word size for Gepard.
+          @ fig_size   : Size of the png file of the dot plot.
+          @ plot_size  : Display size of the plot in Jupyter.
         """
         def _prep(seq: str, name: str, prolog: str):
             save_fasta([FastaRecord(name=(name if name is not None

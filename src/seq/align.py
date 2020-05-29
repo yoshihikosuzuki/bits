@@ -64,8 +64,8 @@ class Alignment:
                 else None)
 
     def show(self, a_seq: Optional[str] = None, b_seq: Optional[str] = None,
-             width: int = 100, twine_plot: bool = False):
-        """Print the pairwise alignment like BLAST or as a "twine plot".
+             width: int = 100, twist_plot: bool = False):
+        """Print the pairwise alignment like BLAST or as a "twist plot".
         `self.[a|b]_seq` are regarded as DNA sequences if `[a|b]_seq` are None.
         """
         assert self.cigar is not None, "`cigar` must be stored"
@@ -103,7 +103,7 @@ class Alignment:
         assert a_pos == len(a_seq) and b_pos == len(b_seq), \
             "Invalid CIGAR string for the alignment"
 
-        if twine_plot:
+        if twist_plot:
             a_str, b_str, fcigar = map(lambda x: ''.join(x),
                                        zip(*[(' ', ' ', a_str[i]) if c == '='
                                              else (a_str[i], b_str[i], ' ')

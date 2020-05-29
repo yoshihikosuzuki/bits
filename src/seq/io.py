@@ -6,7 +6,6 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
 from BITS.util.type import ExplicitRepr
 from BITS.util.proc import run_command
-from .align import Alignment
 from .util import split_seq, ascii_to_phred
 
 
@@ -22,18 +21,16 @@ class SeqRecord(ExplicitRepr):
 
 @dataclass
 class FastaRecord(SeqRecord):
+    """Sequence with name."""
     name: str
 
     def __repr__(self):
         return self._order_repr(["name", "seq"])
 
-    @property
-    def length(self):
-        return len(self.seq)
-
 
 @dataclass
 class FastqRecord(FastaRecord):
+    """Sequence with name and base qualities."""
     qual: str
 
     def __repr__(self):
@@ -46,6 +43,7 @@ class FastqRecord(FastaRecord):
 
 @dataclass
 class DazzRecord(FastaRecord):
+    """Sequence with name and DAZZ_DB ID."""
     id: int
 
     def __repr__(self):

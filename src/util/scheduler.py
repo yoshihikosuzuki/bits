@@ -1,16 +1,16 @@
 from dataclasses import dataclass
-from typing import Optional, Union, List
+from typing import Optional, List
 from logzero import logger
 from .proc import run_command
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, frozen=True)
 class Scheduler:
-    """Utility for submitting jobs using a job scheduler.
+    """Utility for submitting scripts using a job scheduler.
 
     usage:
       > s = Scheduler("sge", "qsub", "all.q")
-      > s.submit("sleep 1s", "sleep.sh")
+      > s.submit("sleep 1s", "sleep.sh", "sleep")
 
     optional variables:
       @ scheduler_name : Name of job scheduler to be used. "sge" or "slurm".
@@ -30,95 +30,93 @@ class Scheduler:
 
     def submit(self,
                script: str,
-               out_fname: str,
-               job_name: str = "run_script",
+               out_script_fname: str,
+               job_name: str,
                log_fname: str = "log",
                n_core: int = 1,
-               time_limit: Optional[Union[int, str]] = None,
-               mem_limit: Optional[int] = None,
-               depend_job_ids: List[str] = [],
+               max_cpu_hour: Optional[int] = None,
+               max_mem_gb: Optional[int] = None,
+               depend_job_ids: Optional[List[str]] = None,
                wait: bool = False) -> str:
-        """Submit `script` after writing it into a file `out_fname`.
+        """Generate and submit a script file from a script string.
 
         positional arguments:
-          @ script         : Script (not a file).
-          @ out_fname      : Shell script file name to which `script` is written.
-          @ job_name       : Display name of the job.
-          @ log_fname      : Log file name.
-          @ n_core         : Number of cores used for the job.
-          @ time_limit     : In hours. Format depends on the scheduler type.
-          @ mem_limit      : In MB.
-          @ depend_job_ids : Wait to start the script until these jobs finish.
-          @ wait           : If True, wait until the script finishes.
+          @ script           : Script (not a file).
+          @ out_script_fname : Name of the script file generated and submitted.
+          @ job_name         : Display name of the job.
+          @ log_fname        : Name of the log file.
+          @ n_core           : Number of cores used for the job.
+          @ max_cpu_hour     : In hours.
+          @ max_mem_gb       : In GB.
+          @ depend_job_ids   : Wait to start the script until these jobs finish.
+          @ wait             : If True, wait until the script finishes.
 
         return value:
           @ job_id : Of the script submitted.
         """
-        logger.info(f"Submitting a job: {script}")
-        if self.prefix_command is not None:
-            script = f"{self.prefix_command}\n{script}"
-        with open(out_fname, "w") as f:
-            f.write((self._sge_nize if self.scheduler_name == "sge"
-                     else self._slurm_nize)(script,
-                                            job_name,
-                                            log_fname,
-                                            n_core,
-                                            time_limit,
-                                            mem_limit,
-                                            depend_job_ids,
-                                            wait))
-        ret = run_command(f"{self.submit_command} {out_fname}")
-        return ret.split()[2] if self.scheduler_name == "sge" else ret.split()[-1]
+        logger.info(f"Submit command(s):\n{script}")
+        header = (self.gen_sge_header if self.scheduler_name == "sge"
+                  else self.gen_slurm_header)(job_name,
+                                              log_fname,
+                                              n_core,
+                                              max_cpu_hour,
+                                              max_mem_gb,
+                                              depend_job_ids,
+                                              wait)
+        with open(out_script_fname, "w") as f:
+            f.write('\n'.join(filter(None, ["#!/bin/bash",
+                                            header + "\n",
+                                            self.prefix_command,
+                                            script + "\n"])))
+        return (run_command(f"{self.submit_command} {out_script_fname}")
+                .split()[2 if self.scheduler_name == "sge" else -1])
 
-    def _sge_nize(self,
-                  script: str,
-                  job_name: str,
-                  log_fname: str,
-                  n_core: int,
-                  time_limit: Optional[Union[int, str]],
-                  mem_limit: Optional[int],
-                  depend_job_ids: List[str],
-                  wait: bool) -> str:
-        header = '\n'.join(["#!/bin/bash",
-                            f"#$ -N {job_name}",
-                            f"#$ -o {log_fname}",
-                            "#$ -j y",
-                            "#$ -S /bin/bash",
-                            "#$ -cwd",
-                            "#$ -V",
-                            f"#$ -pe smp {n_core}",
-                            f"#$ -sync {'y' if wait else 'n'}"])
-        if self.queue_name is not None:
-            header += f"\n#$ -q {self.queue_name}"
-        if time_limit is not None:
-            header += f"\n#$ -l h_cpu={time_limit}"
-        if mem_limit is not None:
-            header += f"\n#$ -l mem_total={mem_limit}"
-        if len(depend_job_ids) != 0:
-            header += f"\n#$ -hold_jid {','.join(depend_job_ids)}"
-        return f"{header}\n\n{script}\n"
+    def gen_sge_header(self,
+                       job_name: str,
+                       log_fname: str,
+                       n_core: int,
+                       max_cpu_hour: Optional[int],
+                       max_mem_gb: Optional[int],
+                       depend_job_ids: Optional[List[str]],
+                       wait: bool) -> str:
+        return '\n'.join(filter(None,
+                                [f"#$ -N {job_name}",
+                                 f"#$ -o {log_fname}",
+                                 "#$ -j y",
+                                 "#$ -S /bin/bash",
+                                 "#$ -cwd",
+                                 "#$ -V",
+                                 f"#$ -q {self.queue_name}"
+                                 if self.queue_name is not None else "",
+                                 f"#$ -pe smp {n_core}",
+                                 f"#$ -l h_cpu={max_cpu_hour}"
+                                 if max_cpu_hour is not None else "",
+                                 f"#$ -l mem_total={max_mem_gb}G"
+                                 if max_mem_gb is not None else "",
+                                 f"#$ -hold_jid {','.join(depend_job_ids)}"
+                                 if depend_job_ids is not None else "",
+                                 f"#$ -sync {'y' if wait else 'n'}"]))
 
-    def _slurm_nize(self,
-                    script: str,
-                    job_name: str,
-                    log_fname: str,
-                    n_core: int,
-                    time_limit: Optional[Union[int, str]],
-                    mem_limit: Optional[int],
-                    depend_job_ids: List[str],
-                    wait: bool) -> str:
-        header = '\n'.join(["#!/bin/bash",
-                            f"#SBATCH -J {job_name}",
-                            f"#SBATCH -o {log_fname}",
-                            "#SBATCH -n 1",
-                            "#SBATCH -N 1",
-                            f"#SBATCH -c {n_core}",
-                            f"#SBATCH -t {'24:00:00' if time_limit is None else time_limit}",
-                            f"#SBATCH --mem={50000 if mem_limit is None else mem_limit}"])
-        if self.queue_name is not None:
-            header += f"\n#$ -q {self.queue_name}"
-        if len(depend_job_ids) != 0:
-            header += f"\n#SBATCH -d afterany:{','.join(depend_job_ids)}"
-        if wait:
-            header += "\n#SBATCH --wait"
-        return f"{header}\n\n{script}\n"
+    def gen_slurm_header(self,
+                         job_name: str,
+                         log_fname: str,
+                         n_core: int,
+                         max_cpu_hour: Optional[int],
+                         max_mem_gb: Optional[int],
+                         depend_job_ids: Optional[List[str]],
+                         wait: bool) -> str:
+        return '\n'.join(filter(None,
+                                [f"#SBATCH -J {job_name}",
+                                 f"#SBATCH -o {log_fname}",
+                                 f"#SBATCH -p {self.queue_name}"
+                                 if self.queue_name is not None else "",
+                                 "#SBATCH -n 1",
+                                 "#SBATCH -N 1",
+                                 f"#SBATCH -c {n_core}",
+                                 f"#SBATCH -t '{max_cpu_hour}:00:00'"
+                                 if max_cpu_hour is not None else "",
+                                 f"#SBATCH --mem={max_mem_gb}G"
+                                 if max_mem_gb is not None else "",
+                                 f"#SBATCH -d afterany:{','.join(depend_job_ids)}"
+                                 if depend_job_ids is not None else "",
+                                 "#SBATCH --wait" if wait else ""]))
