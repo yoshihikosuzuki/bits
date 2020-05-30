@@ -50,10 +50,3 @@ class ClusteringNumeric(Clustering):
         gmm_bics = [self._gmm_bic(i).bic(self.data) for i in range(1, max_n_clusters + 1)]
         logger.debug(gmm_bics)
         self.assignment = self._gmm_bic(np.argmin(gmm_bics) + 1).predict(self.data)
-
-    def dpmm(self, max_iteration=1000000):   # TODO: tune parameters (max_iteration, converge_threshold_*)
-        """Dirichlet Process (Multinomial) Mixture Model with concentration hyperparameter = 1.0"""
-        #dpmm = DPMM(self.data, verbose=True)   # TODO: store the data for plots?
-        #dpmm.run_sampling(max_iteration)
-        #return dpmm.max_s
-
