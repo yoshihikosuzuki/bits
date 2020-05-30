@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from typing import List
 
 
-@dataclass(repr=False, eq=False)
+@dataclass(eq=False)
 class UnionFind:
-    N      : int
+    N: int
     parents: List[int] = field(init=None)
 
     def __post_init__(self):

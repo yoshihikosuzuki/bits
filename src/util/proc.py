@@ -4,7 +4,7 @@ from multiprocessing.pool import Pool
 from logzero import logger
 
 
-def run_command(command):
+def run_command(command: str) -> str:
     """General-purpose shell command executer."""
     try:
         out = sp.check_output(command, shell=True)
@@ -27,5 +27,5 @@ class NoDaemonProcess(Process):
 
 
 class NoDaemonPool(Pool):
-    """Inherited class of Pool running as a non-daemon process. It can have child processes."""
+    """Custom Pool that can have child processes."""
     Process = NoDaemonProcess
