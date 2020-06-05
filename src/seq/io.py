@@ -10,13 +10,9 @@ from .util import split_seq, ascii_to_phred
 
 
 @dataclass
-class FastaRecord(ExplicitRepr):
-    """Sequence with name."""
-    name: str
+class SeqRecord(ExplicitRepr):
+    """Abstract class for sequence object."""
     seq: str
-
-    def __repr__(self):
-        return self._order_repr(["name", "seq"])
 
     @property
     def length(self) -> int:
@@ -24,11 +20,20 @@ class FastaRecord(ExplicitRepr):
 
 
 @dataclass
+class FastaRecord(SeqRecord):
+    """Sequence with name."""
+    name: str
+
+    def __repr__(self) -> str:
+        return self._order_repr(["name", "seq"])
+
+
+@dataclass
 class FastqRecord(FastaRecord):
     """Sequence with name and base qualities."""
     qual: str
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._order_repr(["name", "seq", "qual"])
 
     @property
@@ -42,7 +47,7 @@ class DazzRecord(FastaRecord):
     """Sequence with name and DAZZ_DB ID."""
     id: int
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._order_repr(["id", "name", "seq"])
 
 

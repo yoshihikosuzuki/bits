@@ -20,15 +20,15 @@ class ClusteringNumeric(Clustering):
     ##  Clustering with fixed number of clusters  ##
     ## ------------------------------------------ ##
     def kmeans(self, n_clusters):
-        self.assignment = KMeans(n_clusters=n_clusters).fit_predict(self.data)
+        self.assignments = KMeans(n_clusters=n_clusters).fit_predict(self.data)
 
     def gmm(self, n_clusters):
         gmm = GaussianMixture(n_components=n_clusters, covariance_type="full")
         gmm.fit(self.data)
-        self.assignment = gmm.predict(self.data)
+        self.assignments = gmm.predict(self.data)
 
     def birch(self, n_clusters):
-        self.assignment = Birch(n_clusters=n_clusters).fit_predict(self.data)
+        self.assignments = Birch(n_clusters=n_clusters).fit_predict(self.data)
 
     def nmf(self, n_clusters):   # TODO: debug
         nmf = NMF(n_components=n_clusters)
@@ -49,4 +49,4 @@ class ClusteringNumeric(Clustering):
         """Gaussian Mixture Model with model selection by BIC."""
         gmm_bics = [self._gmm_bic(i).bic(self.data) for i in range(1, max_n_clusters + 1)]
         logger.debug(gmm_bics)
-        self.assignment = self._gmm_bic(np.argmin(gmm_bics) + 1).predict(self.data)
+        self.assignments = self._gmm_bic(np.argmin(gmm_bics) + 1).predict(self.data)

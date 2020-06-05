@@ -159,6 +159,7 @@ def make_layout(width: Optional[int] = None,
                 y_zeroline: bool = True,
                 x_reversed: bool = False,
                 y_reversed: bool = False,
+                margin: Dict = dict(l=80, r=80, t=100, b=80),
                 shapes: Optional[List[Dict]] = None):
     """Create a simple Layout object for Plotly.
 
@@ -213,6 +214,7 @@ def make_layout(width: Optional[int] = None,
                      legend=dict(font=dict(family=font,
                                            size=font_size_legend,
                                            color="black")),
+                     margin=margin,
                      shapes=shapes)
 
 

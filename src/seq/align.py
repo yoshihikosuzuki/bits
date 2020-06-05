@@ -1,91 +1,74 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from logzero import logger
 import edlib
 from .util import revcomp_seq, split_seq
 from .cigar import Cigar
 
 
-@dataclass(frozen=True)
-class Alignment:
-    """An overlap between two reads.
+@dataclass
+class EdlibAlignment:
+    """An alignment between two sequences computed by EdlibRunner.
 
-    optional arguments:
-      @ [a|b]_seq          : Not limited to str but any identifier of a sequence.
-                             e.g. ID/name/object/sequence/etc.
-      @ strand             : 0 or 1
-      @ apply_strand_first : `a_seq[a_start:a_end]` matches to:
-                             `strand(b_seq)[b_start:b_end]` if True (default),
-                             `strand(b_seq[b_start:b_end])` otherwise.
+    NOTE: `a_seq[a_start:a_end] == strand(b_seq[b_start:b_end])`.
+          That is, `[a|b]_[start|end]` are positions on FORWARD sequence.
+
+    NOTE: `cigar` converts `b_aligned_seq` into `a_aligned_seq`.
+
+    NOTE: Only `b_seq` can be cyclically aligned. `a_seq` never.
+          Currently only global cyclic alignment is supported by EdlibRunner,
+          meaning `b_start == b_end` indicates the alignment is cyclic.
+
+    positional arguments:
+      @ [a|b]_seq          : Input DNA sequenecs.
+      @ strand             : 0 or 1.
       @ [a|b]_[start|end]  : Start/end position of the alignment.
-      @ [a|b]_len          : Length of the entire sequence.
-      @ length             : Length of the alignment inlcuding gaps.
       @ diff               : Sequence dissimilarity of the alignment.
       @ cigar              : Cigar string of the alignment.
     """
-    a_seq: Optional[Any] = None
-    b_seq: Optional[Any] = None
-    strand: int = 0
-    apply_strand_first: bool = True
-    a_start: Optional[int] = None
-    a_end: Optional[int] = None
-    a_len: Optional[int] = None
-    b_start: Optional[int] = None
-    b_end: Optional[int] = None
-    b_len: Optional[int] = None
-    length: Optional[int] = None
-    diff: Optional[float] = None
-    cigar: Optional[Cigar] = None
-
-    def __post_init__(self):
-        assert self.strand in (0, 1), "`strand` must be 0/1"
+    a_seq: str
+    b_seq: str
+    strand: int
+    a_start: int
+    a_end: int
+    b_start: int
+    b_end: int
+    diff: float
+    cigar: Cigar
 
     def __repr__(self) -> str:
-        a_repr = f"a[{self.a_start}:{self.a_end}]"
-        b_range = f"[{self.b_start}:{self.b_end}]"
-        b_repr = (f"b{b_range}" if self.strand == 0
-                  else f"(b*){b_range}" if self.apply_strand_first
-                  else f"(b{b_range})*")
-        length = f"{'-' if self.length is None else self.length} bp"
-        diff = f"{'-' if self.diff is None else round(100 * self.diff, 2)} %diff"
-        return f"{a_repr} - {b_repr} ({length}, {diff})"
+        a_repr = f"a_seq[{self.a_start}:{self.a_end}]"
+        b_repr = (f"b_seq[{self.b_start}:{self.b_end}]" if not self.is_cyclic
+                  else f"b_seq[{self.b_start}:] + b_seq[:{self.b_end}]")
+        if self.strand == 1:
+            b_repr = f"*({b_repr})"
+        return (f"{a_repr} ~ {b_repr} "
+                f"({self.length} bp, {100 * self.diff:.2f} %diff)")
 
     @property
-    def b_start_forward(self) -> Optional[int]:
-        return (self.b_start if self.strand == 0 or not self.apply_strand_first
-                else self.b_len - self.b_end if (self.b_len is not None
-                                                 and self.b_end is not None)
-                else None)
+    def length(self) -> int:
+        return self.cigar.aln_length
 
     @property
-    def b_end_forward(self) -> Optional[int]:
-        return (self.b_end if self.strand == 0 or not self.apply_strand_first
-                else self.b_len - self.b_start if (self.b_len is not None
-                                                   and self.b_start is not None)
-                else None)
+    def is_cyclic(self) -> bool:
+        """Assuming only global alignment for cyclic alignment."""
+        return self.b_start == self.b_end
 
-    def show(self, a_seq: Optional[str] = None, b_seq: Optional[str] = None,
-             width: int = 100, twist_plot: bool = False):
-        """Print the pairwise alignment like BLAST or as a "twist plot".
-        `self.[a|b]_seq` are regarded as DNA sequences if `[a|b]_seq` are None.
-        """
-        assert self.cigar is not None, "`cigar` must be stored"
-        if a_seq is None:
-            assert isinstance(self.a_seq, str), "`self.a_seq` must be str"
-            a_seq = self.a_seq
-        if b_seq is None:
-            assert isinstance(self.b_seq, str), "`self.b_seq` must be str"
-            b_seq = self.b_seq
+    @property
+    def a_aligned_seq(self) -> str:
+        return self.a_seq[self.a_start:self.a_end]
 
-        # Cut out the subsequences of the alignment region
-        a_seq = a_seq[self.a_start:self.a_end]
-        b_seq = (b_seq[self.b_start:self.b_end] if self.strand == 0
-                 else revcomp_seq(b_seq)[self.b_start:self.b_end] if self.apply_strand_first
-                 else revcomp_seq(b_seq[self.b_start:self.b_end]))
+    @property
+    def b_aligned_seq(self) -> str:
+        seq = (self.b_seq[self.b_start:self.b_end] if not self.is_cyclic
+               else self.b_seq[self.b_start:] + self.b_seq[:self.b_end])
+        return seq if self.strand == 0 else revcomp_seq(seq)
 
-        # Insert gaps to the subsequences
-        fcigar = self.cigar.flatten()
+    def show(self, width: int = 100, twist_plot: bool = False):
+        """Print the pairwise alignment like BLAST or as a "twist plot"."""
+        a_seq, b_seq = self.a_aligned_seq, self.b_aligned_seq
         a_str, b_str = '', ''
         a_pos, b_pos = 0, 0
+        fcigar = self.cigar.flatten()
         for c in fcigar:
             if c == '=' or c == 'X':
                 a_str += a_seq[a_pos]
@@ -102,35 +85,28 @@ class Alignment:
                 a_pos += 1
         assert a_pos == len(a_seq) and b_pos == len(b_seq), \
             "Invalid CIGAR string for the alignment"
-
         if twist_plot:
+            # Collapse bases on matches
             a_str, b_str, fcigar = map(lambda x: ''.join(x),
                                        zip(*[(' ', ' ', a_str[i]) if c == '='
                                              else (a_str[i], b_str[i], ' ')
                                              for i, c in enumerate(fcigar)]))
         a_str, b_str, fcigar = map(lambda x: split_seq(x, width),
                                    (a_str, b_str, fcigar))
-
         n_digit = max(map(lambda x: len(str(x)),
-                          (self.a_start or 0,
-                           self.a_end or 0,
-                           self.b_start_forward or 0,
-                           self.b_end_forward or 0)))
+                          (self.a_start, self.a_end, self.b_start, self.b_end)))
         a_pos = self.a_start
-        b_pos = self.b_start_forward if self.strand == 0 else self.b_end_forward - 1
-
+        b_pos = self.b_start if self.strand == 0 else self.b_end - 1
         for i in range(len(fcigar)):
             print(f"a:{'-' if a_pos is None else a_pos:{n_digit}}  {a_str[i]}")
             print(f"  {' ' * n_digit}  {fcigar[i]}")
             print(f"b:{'-' if b_pos is None else b_pos:{n_digit}}  {b_str[i]}")
             print("")
-            if a_pos is not None:
-                a_pos += len(a_str[i].replace('-', ''))
-            if b_pos is not None:
-                if self.strand == 0:
-                    b_pos += len(b_str[i].replace('-', ''))
-                else:
-                    b_pos -= len(b_str[i].replace('-', ''))
+            a_pos += len(a_str[i].replace('-', ''))
+            if self.strand == 0:
+                b_pos += len(b_str[i].replace('-', ''))
+            else:
+                b_pos -= len(b_str[i].replace('-', ''))
 
 
 EDLIB_MODE = {"global": "NW", "glocal": "HW", "prefix": "SHW"}
@@ -138,7 +114,9 @@ EDLIB_MODE = {"global": "NW", "glocal": "HW", "prefix": "SHW"}
 
 @dataclass(repr=False, eq=False)
 class EdlibRunner:
-    """Utility for running edlib with two sequences. Only "path" task is supported.
+    """Utility for running edlib with two sequences.
+
+    NOTE: Only "path" task is currently supported.
 
     usage:
       > er_global = EdlibRunner("global")
@@ -153,7 +131,7 @@ class EdlibRunner:
       @ revcomp      : If True, find reverse complement alignment as well.
       @ cyclic       : If True, perform cyclic alignment (`mode` must be `global`).
     """
-    mode: str   # TODO: "proper" mode?
+    mode: str
     revcomp: bool = True
     cyclic: bool = False
 
@@ -161,84 +139,82 @@ class EdlibRunner:
         assert self.mode in EDLIB_MODE, f"Invalid mode: {self.mode}"
         assert not self.cyclic or self.mode == "global", \
             "Currently only global mode is supported for cyclic alignment"
+        assert not (self.revcomp and self.mode == "prefix"), \
+            "Reverse complement cannot be cosidered for prefix alignment"
 
-    def align(self, query: str, target: str) -> Alignment:
+    def align(self,
+              query: str,
+              target: str) -> EdlibAlignment:
         """Align `query` to `target`."""
-        return (self._align_cyclic if self.cyclic else self._align)(query, target)
+        if self.mode in ("glocal", "prefix") and len(query) > 1.1 * len(target):
+            logger.warn("query is much longer than target unexpectedly")
+        return (self._align_cyclic if self.cyclic
+                else self._align)(query, target)
 
-    def _align(self, query: str, target: str) -> Alignment:
+    def _align(self,
+               query: str,
+               target: str) -> EdlibAlignment:
         """Find best alignment with diff, cosidering strand if needed."""
-        aln = self._run_edlib(query, target, 0)
+        aln = self._run_edlib(query, target, strand=0)
         if self.revcomp:
-            aln2 = self._run_edlib(query, target, 1)
+            aln2 = self._run_edlib(query, target, strand=1)
             if aln.diff > aln2.diff:
                 aln = aln2
         return aln
 
-    def _run_edlib(self, query: str, target: str, strand: int) -> Alignment:
-        """Run edlib with the two sequences.
-        Multiple alignments with the same edit distance can exist, but here report only
-        the first one.
-        """
-        e = edlib.align(query,
-                        target if strand == 0 else revcomp_seq(target),
-                        mode=EDLIB_MODE[self.mode],
-                        task="path")
-        start, end = e["locations"][0]
-        cigar = Cigar(e["cigar"])
-        return Alignment(a_seq=query,
-                         b_seq=target,
-                         strand=strand,
-                         a_start=0,
-                         a_end=len(query),
-                         a_len=len(query),
-                         b_start=start,
-                         b_end=end + 1,
-                         b_len=len(target),
-                         length=cigar.aln_length,
-                         diff=e["editDistance"] / cigar.aln_length,
-                         cigar=cigar)
-
-    def _align_cyclic(self, query: str, target: str) -> Alignment:
+    def _align_cyclic(self,
+                      query: str,
+                      target: str) -> EdlibAlignment:
         """Map `query` to a duplicated `target` as a surrogate of cyclic alignment."""
         self.mode = "glocal"
         aln = self._align(query, target * 2)
         self.mode = "global"
-
-        if aln.strand == 1:
-            target = revcomp_seq(target)
-
-        if aln.b_end > len(target):   # adjust the positions to the original coordinates
+        # Convert positions on duplicated sequence to those on original sequence
+        if aln.b_end > len(target):
             aln.b_end -= len(target)
             if aln.b_start >= len(target):
                 aln.b_start -= len(target)
-        if aln.b_end != aln.b_start:   # adjust start/end positions if the mapping is not global
-            # If the mapping is short, set `aln.b_start` to start=end position and re-calculate alignment.
-            aln_s = self._realign_cyclic(query, target, aln.b_start)
-            # If the mapping is redundant, check which of `aln.b_start` and `aln.b_end` is better for
-            # start=end position of the alignment
+        if aln.b_end != aln.b_start:
+            # Adjust glocal alignment to global alignment
+            # 1. Assume `b_start` as the boundary of the global alignment
+            aln_s = self._run_edlib(query,
+                                    target[aln.b_start:]
+                                    + target[:aln.b_start],
+                                    aln.strand)
+            aln_s.b_start = aln_s.b_end = aln.b_start
             if aln.b_start < aln.b_end:
-                aln_e = self._realign_cyclic(query, target, aln.b_end)
+                # 2. Assume `b_end` as the boundary of the global alignment
+                aln_e = self._run_edlib(query,
+                                        target[aln.b_end:]
+                                        + target[:aln.b_end],
+                                        aln.strand)
+                aln_e.b_start = aln_e.b_end = aln.b_end
                 if aln_s.diff > aln_e.diff:
                     aln_s = aln_e
             aln = aln_s
-
         return aln
 
-    def _realign_cyclic(self, query: str, target: str, start_pos: int) -> Alignment:
-        """Realign `query` globally assuming `target` starts from and end at `start_pos` cyclically."""
-        aln = self._run_edlib(query,
-                              target[start_pos:] + target[:start_pos],
-                              0)
-        return Alignment(a_seq=aln.a_seq,
-                         b_seq=aln.b_seq,
-                         strand=aln.strand,
-                         a_start=aln.a_start,
-                         a_end=aln.a_end,
-                         a_len=aln.a_len,
-                         b_start=start_pos if start_pos != len(target) else 0,
-                         b_end=start_pos if start_pos != 0 else len(target),
-                         b_len=aln.b_len,
-                         length=aln.length,
-                         diff=aln.diff,
-                         cigar=aln.cigar)
+    def _run_edlib(self,
+                   query: str,
+                   target: str,
+                   strand: int) -> EdlibAlignment:
+        aln = edlib.align(query,
+                          target if strand == 0 else revcomp_seq(target),
+                          mode=EDLIB_MODE[self.mode],
+                          task="path")
+        # NOTE: multiple locations are possible, but here pick only the first one
+        start, end = aln["locations"][0]
+        end += 1
+        if strand == 1:
+            # Convert to positions on forward sequence
+            start, end = len(target) - end, len(target) - start
+        cigar = Cigar(aln["cigar"])
+        return EdlibAlignment(a_seq=query,
+                              b_seq=target,
+                              strand=strand,
+                              a_start=0,
+                              a_end=len(query),
+                              b_start=start,
+                              b_end=end,
+                              diff=aln["editDistance"] / cigar.aln_length,
+                              cigar=cigar)

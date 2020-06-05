@@ -86,6 +86,17 @@ class FlattenCigar(str):
         """Implemented just for consistency with Cigar."""
         return len(self)
 
+    def reverse(self) -> FlattenCigar:
+        """Reverse CIGAR without swapping I/D. Used for reverse complement."""
+        return FlattenCigar(reversed(self))
+
+    def revcomp(self) -> FlattenCigar:
+        return self.reverse()
+
+    def swap_indel(self) -> FlattenCigar:
+        """Swap I and D. This swaps the role of query and target."""
+        return FlattenCigar(self.replace('I', '?').replace('D', 'I').replace('?', 'D'))
+
     def unflatten(self) -> Cigar:
         """Convert to a normal CIGAR string."""
         cigar = ""

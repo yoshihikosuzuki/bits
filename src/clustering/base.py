@@ -1,99 +1,151 @@
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any, Optional, Sequence, List, Tuple
 from collections import Counter
 import numpy as np
-import pandas as pd
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
+from logzero import logger
 from BITS.plot.plotly import make_hist, make_scatter, make_layout, show_plot
 
 
 @dataclass(repr=False, eq=False)
 class Clustering:
-    """Base class of clustering, offering basic and common variables and operations for clustering."""
-    data        : Any   # array-like (List, pd.Series, np.ndarray((N, L))) data
-    names       : List[str]  = None   # of each data; displayed in plots
-    N           : int        = field(init=False)   # number of data; = len(data) or data.shape[0]
-    L           : int        = field(init=False, default=None)   # number of features; = data.shape[1]
-    assignments : np.ndarray = field(init=False)   # cluster assignment for each data; int type of length N
-    s_dist_mat  : np.ndarray = field(init=False, default=None)   # square distance matrix
-    c_dist_mat  : np.ndarray = field(init=False, default=None)   # condensed distance matrix
-    cache       : dict       = field(default_factory=dict)   # store large intermediate data
+    """Base class of clustering, offering common variables and operations.
+
+    positional variables:
+      @ data  : Array of data to be clustered.
+
+    optional variables:
+      @ names : Display name for each data.
+
+    uninitialized variables:
+      @ N           : Number of data.
+      @ assignments : Cluster assignment for each data.
+      @ s_dist_mat  : Square distance matrix among data.
+      @ c_dist_mat  : Condensed distance matrix among data.
+      @ cache       : Internal cache.
+    """
+    data: Sequence
+    names: Optional[Sequence[str]] = None
+    N: int = field(init=False)
+    assignments: np.ndarray = field(init=False)
+    s_dist_mat: np.ndarray = field(init=False, default=None)
+    c_dist_mat: np.ndarray = field(init=False, default=None)
+    cache: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        if type(self.data) is list:
-            self.data = pd.Series(self.data)
-        self.N = self.data.shape[0]
-        if len(self.data.shape) > 1:
-            self.L = self.data.shape[1]
+        if isinstance(self.data, list):
+            self.data = np.array(self.data)
+        self.N = len(self.data)
         if self.names is None:
-            self.names = list(range(self.N))
-        self.assignment = np.full(self.N, -1, dtype="int8")
+            self.names = list(map(lambda i: f"data[{i}]", range(self.N)))
+        self.assignments = np.full(self.N, -1, dtype="int16")
 
     @property
-    def n_clusters(self):
-        return len(set(self.assignment))
+    def n_clusters(self) -> int:
+        return len(set(self.assignments))
 
-    def cluster(self, cluster_id, return_where=False):
-        """Return the data assigned to cluster <cluster_id>.
-        If <return_where>, return the indices of the data instead of the data itself.
-        """
-        where = np.where(self.assignment == cluster_id)[0]
+    def cluster(self,
+                cluster_id: int,
+                return_where: bool = False) -> np.ndarray:
+        """Return the data assigned to cluster `cluster_id`.
+        If `return_where`, return the indices of the data instead."""
+        where = np.where(self.assignments == cluster_id)[0]
         return where if return_where else self.data[where]
 
-    def clusters(self, return_where=False):
+    def clusters(self,
+                 return_where: bool = False) -> List[Tuple[int, Sequence]]:
         """Generator of the clusters in order of cluster ID.
-        If <return_where>, return the indices of the data instead of the data itself.
-        """
-        for cluster_id in sorted(list(set(self.assignment))):
-            yield (cluster_id, self.cluster(cluster_id, return_where))
+        If `return_where`, return the indices of the data instead."""
+        return [(cluster_id, self.cluster(cluster_id, return_where))
+                for cluster_id in sorted(list(set(self.assignments)))]
 
-    def merge_cluster(self, cluster_from, cluster_to):
-        """Change the assignments of the data in <cluster_from> as <cluster_to>."""
-        self.assignment[self.cluster(cluster_from, return_where=True)] = cluster_to
+    def merge_cluster(self,
+                      cluster_from: int,
+                      cluster_to: int):
+        """Change the assignments of the data in `cluster_from` as `cluster_to`."""
+        indices = self.cluster(cluster_from, return_where=True)
+        self.assignments[indices] = cluster_to
 
-    def hist_cluster_size(self, bin_size=10, width=18, height=10):
+    def hist_cluster_size(self,
+                          bin_size: int = 10,
+                          width: int = 18,
+                          height: int = 10):
         """Histogram of the size of the clusters."""
-        trace = make_hist(list(Counter(self.assignment).values()), bin_size=bin_size)
-        layout = make_layout(width, height, x_title="Cluster size", y_title="Frequency")
-        show_plot([trace], layout)
+        show_plot(make_hist(list(Counter(self.assignments).values()),
+                            bin_size=bin_size),
+                  make_layout(width, height,
+                              x_title="Cluster size", y_title="Frequency"))
 
-    def plot_dist_mat(self, variable_scale=False, show_scale=True, size=500, out_fname=None):
-        """Draw a heatmap of <s_dist_mat>."""
-        assert self.N <= 1000, "Too many data to plot"
-        trace = go.Heatmap(z=self.s_dist_mat, colorscale="YlGnBu", showscale=show_scale,
-                           zmin=None if variable_scale else 0., zmax=None if variable_scale else 1.)
-        layout = make_layout(size, size, y_reversed=True)
-        show_plot([trace], layout, out_fname=out_fname)
+    def plot_dist_mat(self,
+                      variable_scale: bool = False,
+                      show_scale: bool = True,
+                      size: int = 500):
+        """Draw a heatmap of `s_dist_mat`."""
+        if self.N > 1000:
+            logger.warn(f"Data size {self.N} is too large for heatmap."
+                        f"Continue? [y/N]")
+            if input() != "y":
+                return
+        show_plot(go.Heatmap(z=self.s_dist_mat,
+                             colorscale="Blues", reversescale=True,
+                             showscale=show_scale,
+                             zmin=None if variable_scale else 0.,
+                             zmax=None if variable_scale else 1.),
+                  make_layout(size, size, y_reversed=True,
+                              margin=dict(l=10, r=10, t=50, b=10)))
 
-    def plot_tsne(self, size=700, marker_size=5, title=None, out_fname=None):
-        """Draw t-SNE plot of the data. Requires <s_dist_mat>."""
-        assert self.s_dist_mat is not None, "No distance matrix"
-        coord = TSNE(n_components=2, metric="precomputed").fit_transform(self.s_dist_mat)
-        trace = make_scatter(coord[:, 0].T, coord[:, 1].T,
-                             text=[f"{self.names[i]}<br>cluster {self.assignment[i]}" for i in range(self.N)],
-                             col=self.assignment, col_scale="Rainbow", show_scale=False,
-                             marker_size=marker_size)
-        layout = make_layout(size, size, title=title)
-        show_plot([trace], layout, out_fname=out_fname)
+    def plot_tsne(self,
+                  size: int = 700,
+                  marker_size: int = 5):
+        """Draw t-SNE plot of the data."""
+        assert self.s_dist_mat is not None, \
+            "Square distance matrix is required"
+        coord = (TSNE(n_components=2, metric="precomputed")
+                 .fit_transform(self.s_dist_mat))
+        show_plot(make_scatter(coord[:, 0].T,
+                               coord[:, 1].T,
+                               text=[f"{self.names[i]}<br>"
+                                     f"cluster {self.assignments[i]}"
+                                     for i in range(self.N)],
+                               col=self.assignments,
+                               col_scale="Rainbow", show_scale=False,
+                               marker_size=marker_size),
+                  make_layout(size, size))
 
-    def _calc_dendrogram(self, method):
+    def _calc_dendrogram(self,
+                         method: str) -> Any:
         if method not in self.cache:
-            assert self.c_dist_mat is not None, "No condensed distance matrix"
+            assert self.c_dist_mat is not None, \
+                "Condensed distance matrix is required"
             self.cache[method] = linkage(self.c_dist_mat, method=method)
-            return self.cache[method]
         return self.cache[method]
 
-    def show_dendrogram(self, method="ward", figsize=(18, 10)):
+    def show_dendrogram(self,
+                        method: str = "ward",
+                        figsize: Tuple[int, int] = (18, 10)):
+        """Draw a dendrogram of the hierarchical clustering."""
         plt.figure(figsize=figsize)
         dendrogram(self._calc_dendrogram(method))
         plt.show()
 
-    def cluster_hierarchical(self, method="ward", criterion="distance", threshold=0.7, figsize=(18, 10)):
-        """<method> = {single, complete, average, weighted, centroid, median, ward (default)}
-        <criterion> = {inconsistent, distance (default), maxclust, monocrit, maxclust_monocrit}
-        <threshold> = threshold in distance criterion
+    def cluster_hierarchical(self,
+                             method: str = "ward",
+                             criterion: str = "distance",
+                             threshold: float = 0.7,
+                             figsize: Tuple[int, int] = (18, 10)):
+        """Run a hierarchical clustering.
+
+        optional arguments:
+          @ method    : Must be one of  {"single", "complete", "average",
+                        "weighted", "centroid", "median", "ward"}.
+          @ criterion : Must be one of {"inconsistent", "distance", "maxclust",
+                        "monocrit", "maxclust_monocrit"}.
+          @ threshold : Threshold for the "distance" criterion.
         """
-        self.assignment = np.array(fcluster(self._calc_dendrogram(method), t=threshold, criterion=criterion))
+        self.assignments = np.array(fcluster(self._calc_dendrogram(method),
+                                             t=threshold,
+                                             criterion=criterion))
+        logger.info(f"{self.n_clusters} clusters generated")
