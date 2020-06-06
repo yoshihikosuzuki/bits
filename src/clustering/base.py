@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional, Sequence, List, Tuple
+from typing import Optional, Sequence, List, Tuple
 from collections import Counter
 import numpy as np
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
@@ -116,8 +116,28 @@ class Clustering:
                                marker_size=marker_size),
                   make_layout(size, size))
 
+    def cluster_hierarchical(self,
+                             threshold: float,
+                             method: str = "ward",
+                             criterion: str = "distance"):
+        """Run a hierarchical clustering.
+
+        positional arguments:
+          @ threshold : Threshold for `criterion`.
+
+        optional arguments:
+          @ method    : Must be one of  {"single", "complete", "average",
+                        "weighted", "centroid", "median", "ward"}.
+          @ criterion : Must be one of {"inconsistent", "distance", "maxclust",
+                        "monocrit", "maxclust_monocrit"}.
+        """
+        self.assignments = np.array(fcluster(self._calc_dendrogram(method),
+                                             t=threshold,
+                                             criterion=criterion))
+        logger.info(f"{self.n_clusters} clusters generated")
+
     def _calc_dendrogram(self,
-                         method: str) -> Any:
+                         method: str) -> np.ndarray:
         if method not in self.cache:
             assert self.c_dist_mat is not None, \
                 "Condensed distance matrix is required"
@@ -131,22 +151,3 @@ class Clustering:
         plt.figure(figsize=figsize)
         dendrogram(self._calc_dendrogram(method))
         plt.show()
-
-    def cluster_hierarchical(self,
-                             method: str = "ward",
-                             criterion: str = "distance",
-                             threshold: float = 0.7,
-                             figsize: Tuple[int, int] = (18, 10)):
-        """Run a hierarchical clustering.
-
-        optional arguments:
-          @ method    : Must be one of  {"single", "complete", "average",
-                        "weighted", "centroid", "median", "ward"}.
-          @ criterion : Must be one of {"inconsistent", "distance", "maxclust",
-                        "monocrit", "maxclust_monocrit"}.
-          @ threshold : Threshold for the "distance" criterion.
-        """
-        self.assignments = np.array(fcluster(self._calc_dendrogram(method),
-                                             t=threshold,
-                                             criterion=criterion))
-        logger.info(f"{self.n_clusters} clusters generated")
