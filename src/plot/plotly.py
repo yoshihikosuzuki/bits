@@ -7,20 +7,33 @@ from plotly.basedatatypes import BaseTraceType
 
 
 def make_line(x0: float, y0: float, x1: float, y1: float,
-              width: float = 1, col: str = "black", layer: str = "above"):
+              width: float = 1,
+              col: str = "black",
+              layer: str = "above"):
     """Create a (non-interactive) line-shape object for Plotly.
     `layer` must be one of {"above" (default), "below"}.
     """
     assert layer in ("above", "below"), \
         "`layer` must be 'above' or 'below'"
-    return dict(type="line", xref="x", yref="y", x0=x0, y0=y0, x1=x1, y1=y1,
-                line=dict(color=col, width=width), layer=layer)
+    return dict(type="line",
+                xref="x",
+                yref="y",
+                x0=x0,
+                y0=y0,
+                x1=x1,
+                y1=y1,
+                line=dict(color=col,
+                          width=width),
+                layer=layer)
 
 
 def make_rect(x0: float, y0: float, x1: float, y1: float,
-              xref: str = "x", yref: str = "y",
-              fill_col: str = "grey", opacity: float = 1.,
-              frame_width: float = 0, frame_col: Optional[str] = None,
+              xref: str = "x",
+              yref: str = "y",
+              fill_col: str = "grey",
+              opacity: float = 1.,
+              frame_width: float = 0,
+              frame_col: Optional[str] = None,
               layer: str = "above"):
     """Create a (non-interactive) rectangle object for Plotly.
     `xref` must be one of {"x" (default), "paper"}. "paper" means `x0` and `x1` indicate
@@ -32,9 +45,18 @@ def make_rect(x0: float, y0: float, x1: float, y1: float,
         "`[x|y]ref` must be '[x|y]' or 'paper'"
     assert layer in ("above", "below"), \
         "`layer` must be 'above' or 'below'"
-    return dict(type="rect", xref=xref, yref=yref, x0=x0, y0=y0, x1=x1, y1=y1,
-                fillcolor=fill_col, opacity=opacity,
-                line=dict(color=frame_col, width=frame_width), layer=layer)
+    return dict(type="rect",
+                xref=xref,
+                yref=yref,
+                x0=x0,
+                y0=y0,
+                x1=x1,
+                y1=y1,
+                fillcolor=fill_col,
+                opacity=opacity,
+                line=dict(color=frame_col,
+                          width=frame_width),
+                layer=layer)
 
 
 def make_hist(data: Union[Sequence, Mapping[Any, int]],
@@ -128,17 +150,26 @@ def make_scatter(x: Sequence,
     assert len(x) == len(y), "`x` and `y` must have same size"
     if text is not None:
         assert len(x) == len(text), "`text` must have same size as data"
-    return go.Scatter(x=x, y=y, text=text, mode=mode, name=name,
-                      hoverinfo="text" if text is not None else None,
-                      textposition=text_pos,
-                      textfont=dict(size=text_size, color=text_col),
-                      marker=(None if mode == "lines" else
-                              dict(size=marker_size, color=col, colorscale=col_scale,
-                                   reversescale=reverse_scale,
-                                   showscale=show_scale if col_scale is not None else None)),
-                      line=(None if mode == "markers" else
-                            dict(width=line_width, color=col)),
-                      showlegend=show_legend)
+    return go.Scatter(
+        x=x,
+        y=y,
+        text=text,
+        mode=mode,
+        name=name,
+        hoverinfo="text" if text is not None else None,
+        textposition=text_pos,
+        textfont=dict(size=text_size,
+                      color=text_col),
+        marker=(None if mode == "lines" else
+                dict(size=marker_size,
+                     color=col,
+                     colorscale=col_scale,
+                     reversescale=reverse_scale,
+                     showscale=show_scale if col_scale is not None else None)),
+        line=(None if mode == "markers" else
+              dict(width=line_width,
+                   color=col)),
+        showlegend=show_legend)
 
 
 def make_layout(width: Optional[int] = None,
@@ -182,40 +213,41 @@ def make_layout(width: Optional[int] = None,
       @ y_reversed : Reverse y-axis if True.
       @ shapes     : List of non-interactive shape objects.
     """
-    return go.Layout(width=width,
-                     height=height,
-                     hovermode="closest",
-                     title=dict(text=title,
-                                font=dict(family=font,
-                                          size=font_size_title,
-                                          color="black")),
-                     xaxis=dict(title=dict(text=x_title,
-                                           font=dict(family=font,
-                                                     size=font_size_axis_title,
-                                                     color="black")),
-                                tickfont=dict(family="Arial",
-                                              size=font_size_axis_tick,
-                                              color="black"),
-                                showgrid=x_grid,
-                                zeroline=x_zeroline,
-                                range=x_range,
-                                autorange="reversed" if x_reversed else None),
-                     yaxis=dict(title=dict(text=y_title,
-                                           font=dict(family=font,
-                                                     size=font_size_axis_title,
-                                                     color="black")),
-                                tickfont=dict(family="Arial",
-                                              size=font_size_axis_tick,
-                                              color="black"),
-                                showgrid=y_grid,
-                                zeroline=y_zeroline,
-                                range=y_range,
-                                autorange="reversed" if y_reversed else None),
-                     legend=dict(font=dict(family=font,
-                                           size=font_size_legend,
-                                           color="black")),
-                     margin=margin,
-                     shapes=shapes)
+    return go.Layout(
+        width=width,
+        height=height,
+        hovermode="closest",
+        title=dict(text=title,
+                   font=dict(family=font,
+                             size=font_size_title,
+                             color="black")),
+        xaxis=dict(title=dict(text=x_title,
+                              font=dict(family=font,
+                                        size=font_size_axis_title,
+                                        color="black")),
+                   tickfont=dict(family="Arial",
+                                 size=font_size_axis_tick,
+                                 color="black"),
+                   showgrid=x_grid,
+                   zeroline=x_zeroline,
+                   range=x_range,
+                   autorange="reversed" if x_reversed else None),
+        yaxis=dict(title=dict(text=y_title,
+                              font=dict(family=font,
+                                        size=font_size_axis_title,
+                                        color="black")),
+                   tickfont=dict(family="Arial",
+                                 size=font_size_axis_tick,
+                                 color="black"),
+                   showgrid=y_grid,
+                   zeroline=y_zeroline,
+                   range=y_range,
+                   autorange="reversed" if y_reversed else None),
+        legend=dict(font=dict(family=font,
+                              size=font_size_legend,
+                              color="black")),
+        margin=margin,
+        shapes=shapes)
 
 
 def show_plot(traces: Union[BaseTraceType, List[BaseTraceType]],
