@@ -9,10 +9,10 @@ from .cigar import Cigar
 class EdlibAlignment:
     """An alignment between two sequences computed by EdlibRunner.
 
-    NOTE: `a_seq[a_start:a_end] == strand(b_seq[b_start:b_end])`.
-          That is, `[a|b]_[start|end]` are positions on FORWARD sequence.
-
-    NOTE: `cigar` converts `b_aligned_seq` into `a_aligned_seq`.
+    NOTE: `a_seq[a_start:a_end] == cigar(strand(b_seq[b_start:b_end]))`
+          That is:
+          1. `[a|b]_[start|end]` are positions on FORWARD sequence.
+          2. `cigar` converts `b_aligned_seq` into `a_aligned_seq`.
 
     NOTE: Only `b_seq` can be cyclically aligned. `a_seq` never.
           Currently only global cyclic alignment is supported by EdlibRunner,
@@ -147,7 +147,7 @@ class EdlibRunner:
               target: str) -> EdlibAlignment:
         """Align `query` to `target`."""
         if self.mode in ("glocal", "prefix") and len(query) > 1.1 * len(target):
-            logger.warn("query is much longer than target unexpectedly")
+            logger.warning("query is much longer than target unexpectedly")
         return (self._align_cyclic if self.cyclic
                 else self._align)(query, target)
 
@@ -160,38 +160,6 @@ class EdlibRunner:
             aln2 = self._run_edlib(query, target, strand=1)
             if aln.diff > aln2.diff:
                 aln = aln2
-        return aln
-
-    def _align_cyclic(self,
-                      query: str,
-                      target: str) -> EdlibAlignment:
-        """Map `query` to a duplicated `target` as a surrogate of cyclic alignment."""
-        self.mode = "glocal"
-        aln = self._align(query, target * 2)
-        self.mode = "global"
-        # Convert positions on duplicated sequence to those on original sequence
-        if aln.b_end > len(target):
-            aln.b_end -= len(target)
-            if aln.b_start >= len(target):
-                aln.b_start -= len(target)
-        if aln.b_end != aln.b_start:
-            # Adjust glocal alignment to global alignment
-            # 1. Assume `b_start` as the boundary of the global alignment
-            aln_s = self._run_edlib(query,
-                                    target[aln.b_start:]
-                                    + target[:aln.b_start],
-                                    aln.strand)
-            aln_s.b_start = aln_s.b_end = aln.b_start
-            if aln.b_start < aln.b_end:
-                # 2. Assume `b_end` as the boundary of the global alignment
-                aln_e = self._run_edlib(query,
-                                        target[aln.b_end:]
-                                        + target[:aln.b_end],
-                                        aln.strand)
-                aln_e.b_start = aln_e.b_end = aln.b_end
-                if aln_s.diff > aln_e.diff:
-                    aln_s = aln_e
-            aln = aln_s
         return aln
 
     def _run_edlib(self,
@@ -218,3 +186,40 @@ class EdlibRunner:
                               b_end=end,
                               diff=aln["editDistance"] / cigar.aln_length,
                               cigar=cigar)
+
+    def _align_cyclic(self,
+                      query: str,
+                      target: str) -> EdlibAlignment:
+        """Map `query` to a duplicated `target` as a surrogate of cyclic alignment."""
+        self.mode = "glocal"
+        aln = self._align(query, target * 2)
+        self.mode = "global"
+        # Convert positions on duplicated sequence to those on original sequence
+        aln.b_seq = target
+        if aln.b_end > len(target):
+            aln.b_end -= len(target)
+            if aln.b_start >= len(target):
+                aln.b_start -= len(target)
+        if aln.b_end != aln.b_start:
+            # Check which position is better for boundary of cyclic alignment
+            aln_s = self._run_edlib_cyclic(query, target,
+                                           aln.b_start, aln.strand)
+            if aln.b_start < aln.b_end:
+                aln_e = self._run_edlib_cyclic(query, target,
+                                               aln.b_end, aln.strand)
+                if aln_s.diff > aln_e.diff:
+                    aln_s = aln_e
+            aln = aln_s
+        return aln
+
+    def _run_edlib_cyclic(self,
+                          query: str,
+                          target: str,
+                          t_boundary: int,
+                          strand: int) -> EdlibAlignment:
+        aln = self._run_edlib(query,
+                              target[t_boundary:] + target[:t_boundary],
+                              strand)
+        aln.b_seq = target
+        aln.b_start = aln.b_end = t_boundary
+        return aln
