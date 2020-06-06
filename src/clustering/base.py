@@ -36,9 +36,10 @@ class Clustering:
     cache: dict = field(default_factory=dict)
 
     def __post_init__(self):
+        self.N = len(self.data)
+        logger.info(f"Input data size = {self.N}")
         if isinstance(self.data, list):
             self.data = np.array(self.data)
-        self.N = len(self.data)
         if self.names is None:
             self.names = list(map(lambda i: f"data[{i}]", range(self.N)))
         self.assignments = np.full(self.N, -1, dtype="int16")
