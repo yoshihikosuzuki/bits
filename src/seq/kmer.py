@@ -12,14 +12,19 @@ def canonical_kmer(kmer):
     return min(kmer, revcomp_seq(kmer))
 
 
-def seq_to_forward_kmer_spectrum(seq, k):
-    """Return a set of FORWARD `k`-mers contained in `seq`."""
-    return set([seq[i:i + k] for i in range(len(seq) - k + 1)])
+def kmer_spectrum(seq, k, by="forward"):
+    """Return a set of forward/canonical k-mers contained in `seq`.
 
+    positional arguments:
+      @ seq : Input sequence.
+      @ k   : Length of k-mers.
 
-def seq_to_canonical_kmer_spectrum(seq, k):
-    """Return a set of CANONICAL `k`-mers contained in `seq`."""
-    return set([canonical_kmer(seq[i:i + k]) for i in range(len(seq) - k + 1)])
+    optional arguments:
+      @ by  : Must be one of {"forward", "canonical"}.
+    """
+    return set([seq[i:i + k] if by == "forward"
+                else canonical_kmer(seq[i:i + k])
+                for i in range(len(seq) - k + 1)])
 
 
 def create_meryl_db(fasta_fname, k, meryl_out):

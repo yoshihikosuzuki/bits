@@ -1,4 +1,3 @@
-from copy import copy
 from dataclasses import dataclass, InitVar
 from typing import Sequence, List, Tuple
 import numpy as np
@@ -119,6 +118,7 @@ class ClusteringSeq(Clustering):
 
 def calc_dist_mat_single(seqs: Sequence[str],
                          er: EdlibRunner) -> np.ndarray:
+    """Compute distance matrix with single core."""
     N = len(seqs)
     dist_mat = np.zeros((N, N), dtype="float32")
     for i, seq_i in enumerate(seqs):
@@ -132,8 +132,9 @@ def calc_dist_mat_single(seqs: Sequence[str],
 def calc_dist_mat_multi(seqs: Sequence[str],
                         er: EdlibRunner,
                         n_core: int = 1) -> np.ndarray:
+    """Compute distance matrix with multi-core parallelization."""
     global global_seqs
-    global_seqs = copy(seqs)
+    global_seqs = seqs
     N = len(seqs)
     rows = [i // 2 if i % 2 == 0 else N - 1 - i // 2 for i in range(N)]
     n_unit = -(-N // n_core)

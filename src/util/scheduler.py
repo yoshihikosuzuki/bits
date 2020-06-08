@@ -134,70 +134,62 @@ def run_distribute(func: Callable,
                    job_name: str = "job",
                    out_fname: str = "out.pkl") -> List:
     """Distribute `[func(arg, **shared_args, n_core=n_core) for arg in args]`
-    into `n_distribute` jobs with a job scheduler specified by `scheduler`.
+    into `n_distribute` jobs (`n_core` per job) with a job scheduler.
 
     positional arguments:
-      @ func: Must be like `func(args: List, **shared_args, n_core: int) -> List`.
-      @ args: List of all arguments.
-              Splitted into `n_distribute` lists of arguments.
-              `func` receives a splitted list of arguments.
-      @ shared_args: Dict of arguments shared by every job.
-      @ scheduler: A scheduler object.
-      @ n_distribute: Number of jobs.
-      @ n_core: Number of cores per job.
+      @ func         : Type must be just like above.
+      @ args         : List of arguments to be distributed.
+      @ shared_args  : Dict of arguments shared among every job.
+                       Add '_' before names of globally shared arguments.
+      @ scheduler    : A Scheduler object.
+      @ n_distribute : Number of jobs.
+      @ n_core       : Number of cores per job.
 
     optional arguments:
-      @ tmp_fname: Directory name for intermediate files.
-      @ job_name: Display job name.
-      @ out_fname: Output file name.
+      @ tmp_dname : Directory name for intermediate files.
+      @ job_name  : Display job name.
+      @ out_fname : Output file name.
     """
     assert isinstance(args, Sequence), \
         "`args` must be a Sequence object"
     assert isinstance(shared_args, Mapping), \
         "`shared_args` must be a Mapping object"
-
     run_command(f"mkdir -p {tmp_dname}; rm -f {tmp_dname}/*")
-
-    n_args = len(args)
-    n_args_per_job = -(-n_args // n_distribute)
-
-    jids = []
+    # Save shared arguments as a single pickle object
+    shared_args_fname = f"{tmp_dname}/shared_args.pkl"
+    save_pickle(shared_args, shared_args_fname)
+    # Split and save arguments, and sumit jobs
+    n_args_per_job = -(-len(args) // n_distribute)
+    job_ids = []
     for i in range(n_distribute):
         index = str(i + 1).zfill(int(np.log10(n_distribute) + 1))
-        _out_fname = f"{tmp_dname}/{out_fname}.{index}"
         _args_fname = f"{tmp_dname}/args.pkl.{index}"
-        _py_fname = f"{tmp_dname}/scatter.py.{index}"
-        _script_fname = f"{tmp_dname}/scatter.sh.{index}"
-        _log_fname = f"{tmp_dname}/log.{index}"
-
-        save_pickle((args[i * n_args_per_job:(i + 1) * n_args_per_job],
-                     shared_args),
+        save_pickle(args[i * n_args_per_job:(i + 1) * n_args_per_job],
                     _args_fname)
-
+        _py_fname = f"{tmp_dname}/scatter.py.{index}"
         with open(_py_fname, 'w') as f:
             f.write(f"""\
 from BITS.util.io import load_pickle, save_pickle
 from {func.__module__} import {func.__name__}
-args, shared_args = load_pickle("{_args_fname}")
+args = load_pickle("{_args_fname}")
+shared_args = load_pickle("{shared_args_fname}")
 save_pickle({func.__name__}(args, **shared_args, n_core={n_core}),
-            "{_out_fname}")
+            "{tmp_dname}/{out_fname}.{index}")
 """)
-
-        jids.append(scheduler.submit(f"python {_py_fname}",
-                                     _script_fname,
-                                     job_name=f"{job_name}_scatter",
-                                     log_fname=_log_fname,
-                                     n_core=n_core))
-
+        job_ids.append(scheduler.submit(f"python {_py_fname}",
+                                        f"{tmp_dname}/scatter.sh.{index}",
+                                        job_name=f"{job_name}_scatter",
+                                        log_fname=f"{tmp_dname}/log.{index}",
+                                        n_core=n_core))
+    # Merge results
     scheduler.submit("sleep 1s",
                      f"{tmp_dname}/gather.sh",
                      job_name=f"{job_name}_gather",
                      log_fname=f"{tmp_dname}/log.gather",
-                     depend_job_ids=jids,
+                     depend_job_ids=job_ids,
                      wait=True)
-    script = f"find {tmp_dname} -name '{out_fname}.*' | sort"
-    fnames = run_command(script).strip().split('\n')
     merged = []
-    for fname in fnames:
+    script = f"find {tmp_dname} -name '{out_fname}.*' | sort"
+    for fname in run_command(script).strip().split('\n'):
         merged += load_pickle(fname)
     return merged
