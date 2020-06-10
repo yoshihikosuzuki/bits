@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Tuple
 from logzero import logger
 import edlib
 from .util import revcomp_seq, split_seq
@@ -63,28 +64,33 @@ class EdlibAlignment:
                else self.b_seq[self.b_start:] + self.b_seq[:self.b_end])
         return seq if self.strand == 0 else revcomp_seq(seq)
 
-    def show(self, width: int = 100, twist_plot: bool = False):
-        """Print the pairwise alignment like BLAST or as a "twist plot"."""
+    def gapped_aligned_seqs(self) -> Tuple[str, str]:
+        """Compute aligned sequences with explicit gap symbols inserted."""
         a_seq, b_seq = self.a_aligned_seq, self.b_aligned_seq
-        a_str, b_str = '', ''
+        a_gapped_seq, b_gapped_seq = '', ''
         a_pos, b_pos = 0, 0
         fcigar = self.cigar.flatten()
         for c in fcigar:
-            if c == '=' or c == 'X':
-                a_str += a_seq[a_pos]
-                b_str += b_seq[b_pos]
+            if c != 'D':
+                a_gapped_seq += a_seq[a_pos]
                 a_pos += 1
-                b_pos += 1
-            elif c == 'D':
-                a_str += '-'
-                b_str += b_seq[b_pos]
+            else:
+                a_gapped_seq += '-'
+            if c != 'I':
+                b_gapped_seq += b_seq[b_pos]
                 b_pos += 1
             else:
-                a_str += a_seq[a_pos]
-                b_str += '-'
-                a_pos += 1
+                b_gapped_seq += '-'
         assert a_pos == len(a_seq) and b_pos == len(b_seq), \
-            "Invalid CIGAR string for the alignment"
+            "Invalid CIGAR string"
+        assert len(a_gapped_seq) == len(b_gapped_seq) == len(fcigar), \
+            "Inconsistent length"
+        return a_gapped_seq, b_gapped_seq
+
+    def show(self, width: int = 100, twist_plot: bool = False):
+        """Print the pairwise alignment like BLAST or as a "twist plot"."""
+        a_str, b_str = self.gapped_aligned_seqs()
+        fcigar = self.cigar.flatten()
         if twist_plot:
             # Collapse bases on matches
             a_str, b_str, fcigar = map(lambda x: ''.join(x),
