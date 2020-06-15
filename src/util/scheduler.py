@@ -132,7 +132,8 @@ def run_distribute(func: Callable,
                    n_core: int,
                    tmp_dname: str = "tmp_distribute",
                    job_name: str = "job",
-                   out_fname: str = "out.pkl") -> List:
+                   out_fname: str = "out.pkl",
+                   log_level: str = "info") -> List:
     """Distribute `[func(arg, **shared_args, n_core=n_core) for arg in args]`
     into `n_distribute` jobs (`n_core` per job) with a job scheduler.
 
@@ -149,11 +150,13 @@ def run_distribute(func: Callable,
       @ tmp_dname : Directory name for intermediate files.
       @ job_name  : Display job name.
       @ out_fname : Output file name.
+      @ log_level : Log level. Must be one of {"info", "debug"}.
     """
     assert isinstance(args, Sequence), \
         "`args` must be a Sequence object"
     assert isinstance(shared_args, Mapping), \
         "`shared_args` must be a Mapping object"
+    assert log_level in ("info", "debug"), "Invalid name"
     run_command(f"mkdir -p {tmp_dname}; rm -f {tmp_dname}/*")
     # Save shared arguments as a single pickle object
     shared_args_fname = f"{tmp_dname}/shared_args.pkl"
@@ -169,8 +172,11 @@ def run_distribute(func: Callable,
         _py_fname = f"{tmp_dname}/scatter.py.{index}"
         with open(_py_fname, 'w') as f:
             f.write(f"""\
+import logging
+import logzero
 from BITS.util.io import load_pickle, save_pickle
 from {func.__module__} import {func.__name__}
+logzero.loglevel(logging.{"INFO" if log_level == "info" else "DEBUG"})
 args = load_pickle("{_args_fname}")
 shared_args = load_pickle("{shared_args_fname}")
 save_pickle({func.__name__}(args, **shared_args, n_core={n_core}),

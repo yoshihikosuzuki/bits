@@ -56,7 +56,7 @@ def consensus_alt(in_seqs, seed_choice="original"):
             index = len(in_seqs) // 2
             in_seqs = [in_seqs[index]] + in_seqs[:index] + in_seqs[index + 1:]
 
-    var_counts = count_variants(in_seqs[0], in_seqs[1:])
+    var_counts = count_discrepant_sites(in_seqs[0], in_seqs[1:])
 
     freqs = defaultdict(list)
     for (pos, subpos, _type, base), count in var_counts.items():

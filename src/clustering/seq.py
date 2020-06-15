@@ -50,13 +50,13 @@ class ClusteringSeq(Clustering):
         """
         assert np.max(self.assignments) >= 0, "Do clustering prior to this"
         self.cons_seqs = self._generate_consensus()
-        logger.info("Initial consensus sequences:\n"
-                    + '\n'.join(map(str, self.cons_seqs)))
+        logger.debug("Initial consensus sequences:\n"
+                     + '\n'.join(map(str, self.cons_seqs)))
         self._merge_similar_clusters(th_merge)
         self._remove_small_clusters(th_noisy)
         self._sync_clusters(th_sync)
-        logger.info("Final consensus sequences:\n"
-                    + '\n'.join(map(str, self.cons_seqs)))
+        logger.debug("Final consensus sequences:\n"
+                     + '\n'.join(map(str, self.cons_seqs)))
 
     def _generate_consensus(self) -> List[ClusterCons]:
         """For each cluster, compute a consensus seuqnece among sequences
@@ -86,7 +86,7 @@ class ClusteringSeq(Clustering):
                         continue
                     if self.er.align(cons_i.seq, cons_j.seq).diff < th_merge:
                         id_i, id_j = cons_i.cluster_id, cons_j.cluster_id
-                        logger.info(f"Merged: {id_j} -> {id_i}")
+                        logger.debug(f"Merged: {id_j} -> {id_i}")
                         self.merge_cluster(id_j, id_i)
                         flag_next = True
             self.cons_seqs = self._generate_consensus()
@@ -101,7 +101,7 @@ class ClusteringSeq(Clustering):
         curr_ids = set([x.cluster_id for x in self.cons_seqs])
         if len(prev_ids) != len(curr_ids):
             removed = ', '.join(map(str, sorted(prev_ids - curr_ids)))
-            logger.info(f"Removed: {removed}")
+            logger.debug(f"Removed: {removed}")
 
     def _sync_clusters(self, th_sync: float):
         """Synchronize start positions of similar consensus sequences."""
@@ -112,7 +112,7 @@ class ClusteringSeq(Clustering):
                 aln = self.er.align(cons_i.seq, cons_j.seq)
                 if aln.diff < th_sync:
                     id_i, id_j = cons_i.cluster_id, cons_j.cluster_id
-                    logger.info(f"Synced: {id_j} ~ {id_i}")
+                    logger.debug(f"Synced: {id_j} ~ {id_i}")
                     cons_j.seq = aln.b_aligned_seq
 
 

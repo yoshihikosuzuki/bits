@@ -63,7 +63,7 @@ class TestEdlibRunner(unittest.TestCase):
         self.assertEqual(aln.b_aligned_seq, self.x)
 
         aln = er.align(self.x, self.y)
-        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap_indel())
+        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap())
         self.assertEqual(aln.a_aligned_seq, self.x)
         self.assertEqual(aln.b_aligned_seq, self.y)
 
@@ -92,7 +92,7 @@ class TestEdlibRunner(unittest.TestCase):
 
         aln = er.align(self.x, revcomp_seq(self.y))
         self.assertEqual(aln.strand, 1)
-        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap_indel())
+        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap())
         self.assertEqual(aln.a_start, 0)
         self.assertEqual(aln.b_start, 0)
         self.assertEqual(aln.a_end, len(self.x))
@@ -110,7 +110,7 @@ class TestEdlibRunner(unittest.TestCase):
 
         # inappropriate use-case (mapped seq is shorter)
         aln = er.align(self.x, self.y)
-        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap_indel())
+        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap())
         self.assertEqual(aln.a_aligned_seq, self.x)
         self.assertEqual(aln.b_aligned_seq, self.y)
 
@@ -140,7 +140,7 @@ class TestEdlibRunner(unittest.TestCase):
         # inappropriate use-case (mapped seq is shorter)
         aln = er.align(self.x, revcomp_seq(self.y))
         self.assertEqual(aln.strand, 1)
-        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap_indel())
+        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap())
         self.assertEqual(aln.a_start, 0)
         self.assertEqual(aln.b_start, 0)
         self.assertEqual(aln.a_end, len(self.x))
@@ -158,7 +158,7 @@ class TestEdlibRunner(unittest.TestCase):
 
         # inappropriate use-case (mapped seq is shorter)
         aln = er.align(self.x, self.y)
-        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap_indel())
+        self.assertEqual(aln.cigar, self.cigar_x2y_global.swap())
         self.assertEqual(aln.a_aligned_seq, self.x)
         self.assertEqual(aln.b_aligned_seq, self.y)
 

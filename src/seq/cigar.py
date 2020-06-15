@@ -53,7 +53,7 @@ class Cigar(str):
     def revcomp(self) -> Cigar:
         return self.reverse()
 
-    def swap_indel(self) -> Cigar:
+    def swap(self) -> Cigar:
         """Swap I and D. This swaps the role of query and target."""
         return Cigar(self.replace('I', '?').replace('D', 'I').replace('?', 'D'))
 
@@ -93,7 +93,7 @@ class FlattenCigar(str):
     def revcomp(self) -> FlattenCigar:
         return self.reverse()
 
-    def swap_indel(self) -> FlattenCigar:
+    def swap(self) -> FlattenCigar:
         """Swap I and D. This swaps the role of query and target."""
         return FlattenCigar(self.replace('I', '?').replace('D', 'I').replace('?', 'D'))
 
