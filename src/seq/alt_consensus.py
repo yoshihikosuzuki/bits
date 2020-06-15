@@ -7,24 +7,24 @@ er_global = EdlibRunner("global", revcomp=False)
 
 class DiscrepantSite(NamedTuple):
     seed_pos: int
-    extra_pos: int
+    extra_pos: int   # positions between adjacent seed positions
     edit_op: str
     base: str
 
 
-def count_discrepant_sites(seed: str,
-                           seqs: List[str]) -> Dict[DiscrepantSite, int]:
+def count_discrepants(seed: str,
+                      seqs: List[str]) -> Dict[DiscrepantSite, int]:
     """Count all discrepant sites between `seed` and each of `seqs`."""
     assert all([len(s) > 0 for s in seqs + [seed]]), "No empty strings"
     # TODO: how to decide "same variant?" especially for multiple variations
     # on same position (but slightly different among units)?
     discrepants = Counter()
     for seq in seqs:
-        aln = er_global(seq, seed)
-        gapped_seq, _ = aln.gapped_aligned_seq()
+        aln = er_global.align(seq, seed)
+        gapped_seq, _ = aln.gapped_aligned_seqs()
         seed_pos = 0
         extra_pos = 0   # positive values for continuous insertions
-        for i, c in enumerate(aln.fcigar):   # fcigar: seed -> seq
+        for i, c in enumerate(aln.cigar.flatten()):   # fcigar: seed -> seq
             if c == '=':
                 extra_pos = 0
             elif c == 'I':
@@ -41,50 +41,46 @@ def count_discrepant_sites(seed: str,
     return discrepants
 
 
-def consensus_alt(in_seqs, seed_choice="original"):
-    """Compute a consensus sequence among `seqs: List[str]` by a simple majority vote for each position
-    of the alignment pileup that is made by globally aligning a seed sequence and each of the other sequences.
-    """
-
-    # Choose the seed and move it to the first element of `in_seqs`
-    assert seed_choice in ("original", "median",
-                           "longest"), "Invalid `seed_choise`"
+def consensus_alt(in_seqs: List[str],
+                  seed_choice: str = "original") -> str:
+    """Compute a consensus sequence by a simple majority vote for each position
+    of the alignment pileup made from global alignments of sequqnces to a seed
+    sequence."""
+    assert seed_choice in ("original", "median", "longest"), \
+        "`seed_choise` must be one of {'original', 'median', 'longest'}"
     if seed_choice != "original":
-        in_seqs = sorted(in_seqs, key=lambda x: len(x),
-                         reverse=True)   # "longest"
+        in_seqs = sorted(in_seqs, key=lambda x: len(x), reverse=True)
         if seed_choice == "median":
             index = len(in_seqs) // 2
             in_seqs = [in_seqs[index]] + in_seqs[:index] + in_seqs[index + 1:]
-
-    var_counts = count_discrepant_sites(in_seqs[0], in_seqs[1:])
-
-    freqs = defaultdict(list)
-    for (pos, subpos, _type, base), count in var_counts.items():
-        freqs[(pos, subpos)].append((base, count))
-
-    cons = ""
-
-    for pos in range(len(in_seqs[0]) + 1):
-        subpos = 1
-        # insertions
-        while (pos, subpos) in freqs:
+    # Count discrepancies on the seed
+    discrepant_counts = count_discrepants(in_seqs[0], in_seqs[1:])
+    discrepants = defaultdict(list)
+    for dis, count in discrepant_counts.items():
+        discrepants[(dis.seed_pos, dis.extra_pos)].append((dis.base, count))
+    # Majority vote for each position on the seed
+    cons_seq = ""
+    seed_seq = in_seqs[0]
+    for pos in range(len(seed_seq) + 1):
+        # Insertions
+        extra_pos = 1
+        while (pos, extra_pos) in discrepants:
             base_counts = Counter({'a': 0, 'c': 0, 'g': 0, 't': 0, '-': 0})
-            for base, count in freqs[(pos, subpos)]:
+            for base, count in discrepants[(pos, extra_pos)]:
                 base_counts[base] = count
             base_counts['-'] = len(in_seqs) - sum(base_counts.values())
-            cons += base_counts.most_common()[0][0]
-            subpos += 1
-        if pos == len(in_seqs[0]):
+            cons_seq += base_counts.most_common()[0][0]
+            extra_pos += 1
+        if pos == len(seed_seq):
             break
-        # others
-        if (pos, 0) not in freqs:
-            cons += in_seqs[0][pos]
+        # Others
+        seed_base = seed_seq[pos]
+        if (pos, 0) not in discrepants:
+            cons_seq += seed_base
         else:
             base_counts = Counter({'a': 0, 'c': 0, 'g': 0, 't': 0, '-': 0})
-            for base, count in freqs[(pos, 0)]:
+            for base, count in discrepants[(pos, 0)]:
                 base_counts[base] = count
-            base_counts[in_seqs[0][pos]] = len(
-                in_seqs) - sum(base_counts.values())
-            cons += base_counts.most_common()[0][0]
-
-    return cons.replace('-', '')
+            base_counts[seed_base] = len(in_seqs) - sum(base_counts.values())
+            cons_seq += base_counts.most_common()[0][0]
+    return cons_seq.replace('-', '')
