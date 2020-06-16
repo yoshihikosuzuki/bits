@@ -9,7 +9,7 @@ from plotly.basedatatypes import BaseTraceType
 def make_line(x0: float, y0: float, x1: float, y1: float,
               width: float = 1,
               col: str = "black",
-              layer: str = "above"):
+              layer: str = "above") -> Dict:
     """Create a (non-interactive) line-shape object for Plotly.
     `layer` must be one of {"above" (default), "below"}.
     """
@@ -27,6 +27,24 @@ def make_line(x0: float, y0: float, x1: float, y1: float,
                 layer=layer)
 
 
+def make_lines(x0y0x1y1s: List[Tuple[int, int, int, int]],
+               width: float = 1,
+               col: str = "black",
+               name: Optional[str] = None,
+               show_legend: bool = False) -> go.Scatter:
+    """Scatter trace object is lighter than shape object. However, only single
+    width and color is allowed."""
+    return make_scatter(x=[x for x0, _, x1, _ in x0y0x1y1s
+                           for x in (x0, x1, None)],
+                        y=[y for _, y0, _, y1 in x0y0x1y1s
+                           for y in (y0, y1, None)],
+                        mode="lines",
+                        line_width=width,
+                        col=col,
+                        name=name,
+                        show_legend=show_legend)
+
+
 def make_rect(x0: float, y0: float, x1: float, y1: float,
               xref: str = "x",
               yref: str = "y",
@@ -34,7 +52,7 @@ def make_rect(x0: float, y0: float, x1: float, y1: float,
               opacity: float = 1.,
               frame_width: float = 0,
               frame_col: Optional[str] = None,
-              layer: str = "above"):
+              layer: str = "above") -> Dict:
     """Create a (non-interactive) rectangle object for Plotly.
     `xref` must be one of {"x" (default), "paper"}. "paper" means `x0` and `x1` indicate
     horizontal relative positions of the entire plot (values are in [0, 1]).
@@ -66,7 +84,7 @@ def make_hist(data: Union[Sequence, Mapping[Any, int]],
               bin_num: int = 10,
               name: Optional[str] = None,
               show_legend: bool = False,
-              use_histogram: bool = False):
+              use_histogram: bool = False) -> Union[go.Bar, go.Histogram]:
     """Create a simple Trace object of a histogram for Plotly.
     Return not `go.Histogram` but `go.Bar` because the former is too inefficient.
 
@@ -120,12 +138,12 @@ def make_scatter(x: Sequence,
                  marker_size: float = 5,
                  marker_width: int = None,
                  line_width: float = 1,
-                 col: Optional[str] = None,
+                 col: Optional[Union[str, Sequence[str]]] = None,
                  col_scale: Optional[str] = None,
                  reverse_scale: bool = False,
                  show_scale: bool = True,
                  name: Optional[str] = None,
-                 show_legend: bool = False):
+                 show_legend: bool = False) -> go.Scatter:
     """Create a simple Trace object of a scatter plot for Plotly.
 
     positional arguments:
@@ -195,7 +213,7 @@ def make_layout(width: Optional[int] = None,
                 x_show_tick_labels: bool = True,
                 y_show_tick_labels: bool = True,
                 margin: Dict = dict(l=80, r=80, t=100, b=80),
-                shapes: Optional[List[Dict]] = None):
+                shapes: Optional[List[Dict]] = None) -> go.Layout:
     """Create a simple Layout object for Plotly.
 
     optional arguments:
