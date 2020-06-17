@@ -103,13 +103,27 @@ def make_hist(data: Union[Sequence, Mapping[Any, int]],
     if use_histogram:
         assert isinstance(data, Sequence), \
             "Only Sequence objects are supported if `use_histogram`."
-        return go.Histogram(x=data, xbins=dict(start=start, end=end, size=bin_size),
-                            name=name, showlegend=show_legend)
+        return go.Histogram(x=data,
+                            xbins=dict(start=start,
+                                       end=end,
+                                       size=bin_size),
+                            name=name,
+                            showlegend=show_legend)
 
     if isinstance(data, Mapping) or not isinstance(next(iter(data)), Number):
         counter = Counter(data) if isinstance(data, Sequence) else data
-        return go.Bar(**dict(zip(('x', 'y'), zip(*counter.items()))),
-                      width=bin_size, name=name, showlegend=show_legend)
+        return go.Bar(**dict(zip(('x', 'y'),
+                                 zip(*counter.items()))),
+                      width=bin_size,
+                      name=name,
+                      showlegend=show_legend)
+
+    if len(set(data)) == 1:
+        return go.Bar(x=[data[0]],
+                      y=[len(data)],
+                      width=bin_size,
+                      name=name,
+                      showlegend=show_legend)
 
     if start is None:
         start = min(data)
@@ -119,13 +133,16 @@ def make_hist(data: Union[Sequence, Mapping[Any, int]],
         bin_num = -int(-(end - start) // bin_size)
     bin_size = (end - start) / bin_num
 
-    counts, bin_edges = np.histogram(data, range=(start, end), bins=bin_num)
+    counts, bin_edges = np.histogram(data,
+                                     range=(start, end),
+                                     bins=bin_num)
 
     return go.Bar(x=[(bin_edges[i] + bin_edges[i + 1]) / 2
                      for i in range(len(bin_edges) - 1)],
                   y=counts,
                   width=bin_size,
-                  name=name, showlegend=show_legend)
+                  name=name,
+                  showlegend=show_legend)
 
 
 def make_scatter(x: Sequence,

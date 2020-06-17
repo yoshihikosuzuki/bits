@@ -71,14 +71,15 @@ class Clustering:
         self.assignments[indices] = cluster_to
 
     def hist_cluster_size(self,
-                          bin_size: int = 10,
-                          width: int = 18,
-                          height: int = 10):
+                          bin_size: int = 1,
+                          size: int = 500):
         """Histogram of the size of the clusters."""
         show_plot(make_hist(list(Counter(self.assignments).values()),
                             bin_size=bin_size),
-                  make_layout(width, height,
-                              x_title="Cluster size", y_title="Frequency"))
+                  make_layout(size,
+                              size,
+                              x_title="Cluster size",
+                              y_title="Frequency"))
 
     def plot_dist_mat(self,
                       variable_scale: bool = False,
@@ -93,11 +94,14 @@ class Clustering:
             if input() != "y":
                 return
         show_plot(go.Heatmap(z=self.s_dist_mat,
-                             colorscale="Blues", reversescale=True,
+                             colorscale="Blues",
+                             reversescale=True,
                              showscale=show_scale,
                              zmin=None if variable_scale else 0.,
                              zmax=None if variable_scale else 1.),
-                  make_layout(size, size, y_reversed=True,
+                  make_layout(size,
+                              size,
+                              y_reversed=True,
                               margin=dict(l=10, r=10, t=50, b=10)))
 
     def plot_tsne(self,
@@ -114,7 +118,8 @@ class Clustering:
                                      f"cluster {self.assignments[i]}"
                                      for i in range(self.N)],
                                col=self.assignments,
-                               col_scale="Rainbow", show_scale=False,
+                               col_scale="Rainbow",
+                               show_scale=False,
                                marker_size=marker_size),
                   make_layout(size, size))
 
