@@ -1,4 +1,4 @@
-from typing import NamedTuple, List, Dict
+from typing import NamedTuple, Sequence, List, Dict
 from collections import Counter, defaultdict
 from BITS.seq.align import EdlibRunner
 
@@ -13,9 +13,10 @@ class DiscrepantSite(NamedTuple):
 
 
 def count_discrepants(seed: str,
-                      seqs: List[str]) -> Dict[DiscrepantSite, int]:
+                      seqs: Sequence[str]) -> Dict[DiscrepantSite, int]:
     """Count all discrepant sites between `seed` and each of `seqs`."""
-    assert all([len(s) > 0 for s in seqs + [seed]]), "No empty strings"
+    assert len(seed) > 0 and all([len(s) > 0 for s in seqs]), \
+        "No empty strings"
     # TODO: how to decide "same variant?" especially for multiple variations
     # on same position (but slightly different among units)?
     discrepants = Counter()

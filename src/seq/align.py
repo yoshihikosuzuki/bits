@@ -87,7 +87,11 @@ class EdlibAlignment:
             "Inconsistent length"
         return a_gapped_seq, b_gapped_seq
 
-    def show(self, width: int = 100, twist_plot: bool = False):
+    def show(self,
+             a_name: str = "a",
+             b_name: str = "b",
+             width: int = 100,
+             twist_plot: bool = False):
         """Print the pairwise alignment like BLAST or as a "twist plot"."""
         a_str, b_str = self.gapped_aligned_seqs()
         fcigar = self.cigar.flatten()
@@ -99,14 +103,15 @@ class EdlibAlignment:
                                              for i, c in enumerate(fcigar)]))
         a_str, b_str, fcigar = map(lambda x: split_seq(x, width),
                                    (a_str, b_str, fcigar))
-        n_digit = max(map(lambda x: len(str(x)),
+        L_pos = max(map(lambda x: len(str(x)),
                           (self.a_start, self.a_end, self.b_start, self.b_end)))
+        L_name = max(len(a_name), len(b_name))
         a_pos = self.a_start
         b_pos = self.b_start if self.strand == 0 else self.b_end - 1
         for i in range(len(fcigar)):
-            print(f"a:{'-' if a_pos is None else a_pos:{n_digit}}  {a_str[i]}")
-            print(f"  {' ' * n_digit}  {fcigar[i]}")
-            print(f"b:{'-' if b_pos is None else b_pos:{n_digit}}  {b_str[i]}")
+            print(f"{a_name:>{L_name}}:{a_pos:{L_pos}}  {a_str[i]}")
+            print(f"{'':>{L_name}} {' ' * L_pos}  {fcigar[i]}")
+            print(f"{b_name:>{L_name}}:{b_pos:{L_pos}}  {b_str[i]}")
             print("")
             a_pos += len(a_str[i].replace('-', ''))
             if self.strand == 0:

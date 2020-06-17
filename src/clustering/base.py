@@ -42,7 +42,7 @@ class Clustering:
             self.data = np.array(self.data)
         if self.names is None:
             self.names = list(map(lambda i: f"data[{i}]", range(self.N)))
-        self.assignments = np.full(self.N, -1, dtype="int16")
+        self.assignments = np.full(self.N, -1, dtype=np.int16)
 
     @property
     def n_clusters(self) -> int:
@@ -57,11 +57,11 @@ class Clustering:
         return where if return_where else self.data[where]
 
     def clusters(self,
-                 return_where: bool = False) -> List[Tuple[int, Sequence]]:
+                 return_where: bool = False) -> List[Tuple[int, np.ndarray]]:
         """Generator of the clusters in order of cluster ID.
         If `return_where`, return the indices of the data instead."""
         return [(cluster_id, self.cluster(cluster_id, return_where))
-                for cluster_id in sorted(list(set(self.assignments)))]
+                for cluster_id in sorted(set(self.assignments))]
 
     def merge_cluster(self,
                       cluster_from: int,
@@ -85,6 +85,8 @@ class Clustering:
                       show_scale: bool = True,
                       size: int = 500):
         """Draw a heatmap of `s_dist_mat`."""
+        assert self.s_dist_mat is not None, \
+            "Square distance matrix is required"
         if self.N > 1000:
             logger.warn(f"Data size {self.N} is too large for heatmap."
                         f"Continue? [y/N]")

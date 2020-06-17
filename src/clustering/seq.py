@@ -62,7 +62,7 @@ class ClusteringSeq(Clustering):
         """For each cluster, compute a consensus seuqnece among sequences
         belonging to the cluster."""
         # input sequences are ready to take consensus?
-        is_aligned = not (self.cyclic or self.revcomp)
+        is_aligned = not (self.er.cyclic or self.er.revcomp)
         return [ClusterCons(
             seq=consed.consensus(list(seqs) if is_aligned
                                  else [seq if i == 0
