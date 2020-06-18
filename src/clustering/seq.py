@@ -6,6 +6,7 @@ from logzero import logger
 import consed
 from BITS.seq.io import SeqRecord
 from BITS.seq.align import EdlibRunner
+from BITS.seq.alt_consensus import consensus_alt
 from BITS.util.proc import NoDaemonPool
 from .base import Clustering
 
@@ -61,15 +62,21 @@ class ClusteringSeq(Clustering):
     def _generate_consensus(self) -> List[ClusterCons]:
         """For each cluster, compute a consensus seuqnece among sequences
         belonging to the cluster."""
-        # input sequences are ready to take consensus?
+        def calc_cons(seqs: List[str]) -> str:
+            # NOTE: Fail-safe consensus with alt_consensus
+            cons_seq = consed.consensus(seqs, seed_choice="median", n_iter=3)
+            if cons_seq == "":
+                logger.info("ClusteringSeq: Consed failed. Use alt_consensus")
+                cons_seq = consensus_alt(seqs, seed_choice="median")
+            return cons_seq
+
+        # Check if input sequences are ready to take consensus or not
         is_aligned = not (self.er.cyclic or self.er.revcomp)
         return [ClusterCons(
-            seq=consed.consensus(list(seqs) if is_aligned
-                                 else [seq if i == 0
-                                       else self.er.align(seqs[0], seq).b_aligned_seq
-                                       for i, seq in enumerate(seqs)],
-                                 seed_choice="median",
-                                 n_iter=3),
+            seq=calc_cons(list(seqs) if is_aligned
+                          else [seq if i == 0
+                                else self.er.align(seqs[0], seq).b_aligned_seq
+                                for i, seq in enumerate(seqs)]),
             cluster_id=cluster_id,
             cluster_size=len(seqs))
             for cluster_id, seqs in self.clusters()]
