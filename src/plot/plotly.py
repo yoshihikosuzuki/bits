@@ -232,28 +232,31 @@ def make_layout(width: Optional[int] = None,
                 y_reversed: bool = False,
                 x_show_tick_labels: bool = True,
                 y_show_tick_labels: bool = True,
+                anchor_axes: bool = False,
                 margin: Dict = dict(l=80, r=80, t=100, b=80),
                 shapes: Optional[List[Dict]] = None) -> go.Layout:
     """Create a simple Layout object for Plotly.
 
     optional arguments:
-      @ width      : Width of the plot.
-      @ height     : Height of the plot.
-      @ font       : Font of (axis) titles.
+      @ width       : Width of the plot.
+      @ height      : Height of the plot.
+      @ font        : Font of (axis) titles.
       @ font_size_[title|axis_title|axis_tick]
-                   : Font size of title/[x|y]_title/[x|y]_tick.
-      @ title      : Title of the plot.
-      @ x_title    : Title of x-axis of the plot.
-      @ y_title    : Title of y-axis of the plot.
-      @ x_range    : Range on x-axis to be drawn in the plot.
-      @ y_range    : Range on y-axis to be drawn in the plot.
-      @ x_grid     : Show grid on x-axis if True.
-      @ y_grid     : Show grid on y-axis if True.
-      @ x_zeroline : Show zeroline on x-axis if True.
-      @ y_zeroline : Show zeroline on y-axis if True.
-      @ x_reversed : Reverse x-axis if True.
-      @ y_reversed : Reverse y-axis if True.
-      @ shapes     : List of non-interactive shape objects.
+                    : Font size of title/[x|y]_title/[x|y]_tick.
+      @ title       : Title of the plot.
+      @ x_title     : Title of x-axis of the plot.
+      @ y_title     : Title of y-axis of the plot.
+      @ x_range     : Range on x-axis to be drawn in the plot.
+      @ y_range     : Range on y-axis to be drawn in the plot.
+      @ x_grid      : Show grid on x-axis if True.
+      @ y_grid      : Show grid on y-axis if True.
+      @ x_zeroline  : Show zeroline on x-axis if True.
+      @ y_zeroline  : Show zeroline on y-axis if True.
+      @ x_reversed  : Reverse x-axis if True.
+      @ y_reversed  : Reverse y-axis if True.
+      @ anchor_axes : Use same scale for both x/y axes.
+      @ margin      : Margin of the plot.
+      @ shapes      : List of non-interactive shape objects.
     """
     return go.Layout(
         width=width,
@@ -286,7 +289,8 @@ def make_layout(width: Optional[int] = None,
                    zeroline=y_zeroline,
                    showticklabels=y_show_tick_labels,
                    range=y_range,
-                   autorange="reversed" if y_reversed else None),
+                   autorange="reversed" if y_reversed else None,
+                   scaleanchor="x" if anchor_axes else None),
         legend=dict(font=dict(family=font,
                               size=font_size_legend,
                               color="black")),
