@@ -73,7 +73,7 @@ def load_fasta(in_fname: str,
                                  else seq.lower() if case == "lower"
                                  else seq.upper()))
                 for name, seq in list(SimpleFastaParser(f))]
-    logger.info(f"{len(seqs)} sequences loaded")
+    logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
     return seqs
 
 
@@ -89,7 +89,7 @@ def load_fastq(in_fname: str,
                                  else seq.upper()),
                             qual=qual)
                 for name, seq, qual in FastqGeneralIterator(f)]
-    logger.info(f"{len(seqs)} sequences loaded")
+    logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
     return seqs
 
 
@@ -137,7 +137,7 @@ def load_db(db_fname: str,
             seqs[i] = DazzRecord(id=int(dazz_id), name=name, seq=seq)
             i += 1
     assert i == n_reads
-    logger.info(f"{n_reads} sequences loaded")
+    logger.info(f"{db_fname}: {n_reads} sequences loaded")
     return seqs
 
 
@@ -162,7 +162,8 @@ def load_db_track(db_fname: str,
             tracks[int(read_id)] = [SeqInterval(start, end)
                                     for start, end in zip(poss[::2], poss[1::2])]
             count += len(poss) // 2
-    logger.info(f"{count} intervals loaded from {len(tracks)} sequences.")
+    logger.info(f"{db_fname} ({track_name}): "
+                f"{count} intervals loaded from {len(tracks)} sequences.")
     return tracks
 
 
@@ -172,7 +173,7 @@ def db_to_n_blocks(db_fname: str) -> int:
         for line in f:
             if line.startswith("blocks"):
                 return int(line.split('=')[1].strip())
-    logger.error(f"No information on the number of blocks in {db_fname}")
+    logger.error(f"{db_fname}: No information on the number of blocks")
 
 
 def db_to_n_reads(db_fname: str) -> int:

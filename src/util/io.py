@@ -7,7 +7,7 @@ def load_pickle(pkl_fname: str) -> Any:
     with open(pkl_fname, 'rb') as f:
         ret = pickle.load(f)
     length = f"(length = {len(ret)})" if hasattr(ret, '__len__') else ""
-    logger.info(f"Loaded {type(ret)} object {length}")
+    logger.info(f"{pkl_fname}: Loaded {type(ret)} object {length}")
     return ret
 
 
