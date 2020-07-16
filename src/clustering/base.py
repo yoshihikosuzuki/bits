@@ -121,7 +121,15 @@ class Clustering:
                                col_scale="Rainbow",
                                show_scale=False,
                                marker_size=marker_size),
-                  make_layout(size, size))
+                  make_layout(width=size,
+                              height=size,
+                              x_grid=False,
+                              y_grid=False,
+                              x_zeroline=False,
+                              y_zeroline=False,
+                              x_show_tick_labels=False,
+                              y_show_tick_labels=False,
+                              margin=dict(l=10, r=10, t=50, b=10)))
 
     def cluster_hierarchical(self,
                              threshold: float,
