@@ -104,7 +104,7 @@ class EdlibAlignment:
         a_str, b_str, fcigar = map(lambda x: split_seq(x, width),
                                    (a_str, b_str, fcigar))
         L_pos = max(map(lambda x: len(str(x)),
-                          (self.a_start, self.a_end, self.b_start, self.b_end)))
+                        (self.a_start, self.a_end, self.b_start, self.b_end)))
         L_name = max(len(a_name), len(b_name))
         a_pos = self.a_start
         b_pos = self.b_start if self.strand == 0 else self.b_end - 1
