@@ -87,7 +87,6 @@ class Scheduler:
                                  "#$ -j y",
                                  "#$ -S /bin/bash",
                                  "#$ -cwd",
-                                 "#$ -V",
                                  f"#$ -q {self.queue_name}"
                                  if self.queue_name is not None else "",
                                  f"#$ -pe smp {n_core}",
