@@ -112,6 +112,19 @@ def save_fastq(reads: Sequence[FastqRecord],
             f.write(f"@{read.name}\n{read.seq}\n+\n{read.qual}\n")
 
 
+def fasta_to_db(fasta_fname: str,
+                db_prefix: str,
+                db_block_size: int = 500,
+                db_type: str = "db"):
+    assert db_type in ("db", "dam"), \
+        "`db_type` must be one of {'db', 'dam'}"
+    run_command(f"fasta2{db_type.upper()} {db_prefix} {fasta_fname}")
+    run_command(f"DBsplit -s{db_block_size} {db_prefix}")
+    n_reads = db_to_n_reads(f"{db_prefix}.{db_type}")
+    n_blocks = db_to_n_blocks(f"{db_prefix}.{db_type}")
+    logger.info(f"{n_reads} reads and {n_blocks} blocks")
+
+
 def load_db(db_fname: str,
             dbid_range: Optional[Tuple[int, int]] = None) -> List[DazzRecord]:
     """Load read IDs, original header names, and sequences from a DAZZ_DB file.
