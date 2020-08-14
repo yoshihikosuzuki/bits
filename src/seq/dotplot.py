@@ -1,5 +1,5 @@
 from os.path import join
-from dataclasses import dataclass
+from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
 from BITS.plot.matplotlib import show_image
 from BITS.util.proc import run_command
@@ -13,18 +13,26 @@ class DotPlot:
     usage in Jupyter:
       > gepard_jar = "/path/to/gepard/dist/Gepard-1.40.jar"
       > gepard_mat = "/path/to/gepard/resources/matrices/edna.mat"
-      > gepard_command = f"java -cp {gepard_jar} org.gepard.client.cmdline.CommandLine -matrix {gepard_mat}"
-      > dp = DotPlot(gepard_command)
+      > dp = DotPlot(gepard_jar, gepard_mat)
       > dp.plot(seq1, seq2)
 
     positional variables:
-      @ gepard_command : Prefix of Gepard command (jar + matrix).
+      @ gepard_jar : Path to a jar executable of Gepard.
+      @ gepard_mat : Path to a score matrix of Gepard.
 
     optional variables:
       @ tmp_dir : Directory for generating fasta files and plots.
     """
-    gepard_command: str
+    gepard_jar: InitVar[str]
+    gepard_mat: InitVar[str]
+    gepard: str = field(init=False)
     tmp_dir: str = "tmp"
+
+    def __post_init__(self, gepard_jar, gepard_mat):
+        run_command(f"mkdir -p {self.tmp_dir}")
+        self.gepard = ' '.join([f"java -cp {gepard_jar}",
+                                "org.gepard.client.cmdline.CommandLine",
+                                f"-matrix {gepard_mat}"])
 
     def _plot(self,
               a_fname: str,
@@ -34,7 +42,7 @@ class DotPlot:
               fig_size: int,
               plot_size: int):
         run_command(' '.join(["unset DISPLAY;",
-                              f"{self.gepard_command}",
+                              f"{self.gepard}",
                               f"-seq1 {a_fname}",
                               f"-seq2 {b_fname}",
                               f"-maxwidth {fig_size}",
