@@ -29,6 +29,8 @@ def kmer_spectrum(seq, k, by="forward"):
 
 def create_meryl_db(fasta_fname, k, meryl_out):
     """Make a meryl k-mer database from the sequences in `fasta_fname`."""
+    # TODO: `count` command of meryl counts canonical k-mers.
+    #       For forward k-mers, use `count-forward`.
     run_command(f"meryl count k={k} {fasta_fname} output {meryl_out}")
 
 
