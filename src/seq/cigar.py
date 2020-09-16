@@ -23,7 +23,6 @@ class Cigar(str):
     positional arguments:
       @ cigar <str> : CIGAR string
     """
-
     def __new__(cls, cigar: str) -> str:
         return str.__new__(cls, cigar)
 
@@ -77,7 +76,6 @@ class FlattenCigar(str):
     positional arguments:
       @ fcigar <str> : A flatten CIGAR string
     """
-
     def __new__(cls, fcigar: str) -> str:
         return str.__new__(cls, fcigar)
 

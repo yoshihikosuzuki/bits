@@ -31,7 +31,8 @@ def make_lines(x0y0x1y1s: List[Tuple[int, int, int, int]],
                width: float = 1,
                col: str = "black",
                name: Optional[str] = None,
-               show_legend: bool = False) -> go.Scatter:
+               show_legend: bool = False,
+               use_webgl: bool = False) -> go.Scatter:
     """Scatter trace object is lighter than shape object. However, only single
     width and color is allowed."""
     return make_scatter(x=[x for x0, _, x1, _ in x0y0x1y1s
@@ -42,7 +43,8 @@ def make_lines(x0y0x1y1s: List[Tuple[int, int, int, int]],
                         line_width=width,
                         col=col,
                         name=name,
-                        show_legend=show_legend)
+                        show_legend=show_legend,
+                        use_webgl=use_webgl)
 
 
 def make_rect(x0: float, y0: float, x1: float, y1: float,
@@ -161,7 +163,8 @@ def make_scatter(x: Sequence,
                  reverse_scale: bool = False,
                  show_scale: bool = True,
                  name: Optional[str] = None,
-                 show_legend: bool = False) -> go.Scatter:
+                 show_legend: bool = False,
+                 use_webgl: bool = False) -> go.Scatter:
     """Create a simple Trace object of a scatter plot for Plotly.
 
     positional arguments:
@@ -187,7 +190,7 @@ def make_scatter(x: Sequence,
     assert len(x) == len(y), "`x` and `y` must have same size"
     if text is not None:
         assert len(x) == len(text), "`text` must have same size as data"
-    return go.Scatter(
+    return (go.Scattergl if use_webgl else go.Scatter)(
         x=x,
         y=y,
         text=text,
