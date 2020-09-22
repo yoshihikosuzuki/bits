@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Optional, Sequence, Tuple, List, Dict
 import numpy as np
@@ -130,6 +131,7 @@ def load_db(db_fname: str,
     """Load read IDs, original header names, and sequences from a DAZZ_DB file.
     `dbid_range` is e.g. `(1, 10)`, which is equal to `$ DBdump {db_fname} 1-10`.
     """
+    mode = os.path.splitext(db_fname)[1]   # ".db" or ".dam"
     n_reads = (db_to_n_reads(db_fname) if dbid_range is None
                else dbid_range[1] - dbid_range[0] + 1)
     seqs = [None] * n_reads
@@ -141,10 +143,14 @@ def load_db(db_fname: str,
         if line.startswith('R'):
             _, dazz_id = line.split()
         elif line.startswith('H'):
-            _, _, prolog = line.split()
+            if mode == ".db":
+                _, _, prolog = line.split()
+            else:
+                name = line.split('>')[1]
         elif line.startswith('L'):
-            _, well, start, end = line.split()
-            name = f"{prolog}/{well}/{start}_{end}"
+            if mode == ".db":
+                _, well, start, end = line.split()
+                name = f"{prolog}/{well}/{start}_{end}"
         elif line.startswith('S'):
             _, _, seq = line.split()
             seqs[i] = DazzRecord(id=int(dazz_id), name=name, seq=seq)
