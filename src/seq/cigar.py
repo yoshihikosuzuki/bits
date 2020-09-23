@@ -23,9 +23,6 @@ class Cigar(str):
     positional arguments:
       @ cigar <str> : CIGAR string
     """
-    def __new__(cls, cigar: str) -> str:
-        return str.__new__(cls, cigar)
-
     def __iter__(self) -> Iterator[Tuple[int, str]]:
         """Iterator over tuples of length and operation."""
         length = ""
@@ -76,9 +73,6 @@ class FlattenCigar(str):
     positional arguments:
       @ fcigar <str> : A flatten CIGAR string
     """
-    def __new__(cls, fcigar: str) -> str:
-        return str.__new__(cls, fcigar)
-
     @property
     def aln_length(self) -> int:
         """Implemented just for consistency with Cigar."""
