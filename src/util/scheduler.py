@@ -180,7 +180,7 @@ from {func.__module__} import {func.__name__}
 logzero.loglevel(logging.{"INFO" if log_level == "info" else "DEBUG"})
 args = load_pickle("{_args_fname}")
 shared_args = load_pickle("{shared_args_fname}")
-save_pickle({func.__name__}(args, **shared_args, n_core={n_core}),
+save_pickle({func.__name__}(args, n_core={n_core}, **shared_args),
             "{tmp_dname}/{out_fname}.{index}")
 """)
         job_ids.append(scheduler.submit(f"python {_py_fname}",
