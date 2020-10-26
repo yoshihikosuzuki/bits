@@ -12,15 +12,19 @@ $ python3 setup.py install
 
 ## How to use
 
+BITS has two submodules: `bits.seq` and `bits.util`. The former is for DNA sequence manipulations and the latter is for other, general purposes in Python programming.
+
 Import and use any function/class you like:
 
 ```python
-> from bits.seq.util import revcomp_seq
+> from bits.seq import revcomp_seq
 > print(revcomp_seq('aactg'))
 ```
 
 ```text
 cagtt
 ```
+
+## List of functions
 
 
