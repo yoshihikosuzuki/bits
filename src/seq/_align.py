@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Tuple
 from logzero import logger
 import edlib
-from .util import revcomp_seq, split_seq
-from .cigar import Cigar
+from ._util import revcomp_seq, split_seq
+from ._cigar import Cigar
 
 
 @dataclass

@@ -1,9 +1,9 @@
 from os.path import join
 from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
-from bits.util import run_command
 import plotly_light as pl
-from .io import FastaRecord, save_fasta
+from ..util import run_command
+from ._io import FastaRecord, save_fasta
 
 
 @dataclass(repr=False, eq=False)

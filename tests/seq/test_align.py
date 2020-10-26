@@ -1,6 +1,5 @@
 import unittest
 from bits.seq.align import EdlibRunner
-
 from bits.seq.cigar import Cigar
 from bits.seq.util import revcomp_seq
 

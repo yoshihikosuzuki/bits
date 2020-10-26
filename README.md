@@ -1,6 +1,6 @@
 # BITS: miscellaneous BioInformatics ToolS
 
-Basically bioinformatics-related, reusable Python codes as a package. Developed in Python 3.7 (most of the codes should work with any Python >= 3).
+Basically bioinformatics-related, reusable Python codes as a package. Developed in Python 3.7, but most of the codes should work with any Python >= 3.
 
 ## How to install
 
@@ -22,3 +22,5 @@ Import and use any function/class you like:
 ```text
 cagtt
 ```
+
+
