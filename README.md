@@ -12,19 +12,28 @@ $ python3 setup.py install
 
 ## How to use
 
-BITS has two submodules: `bits.seq` and `bits.util`. The former is for DNA sequence manipulations and the latter is for other, general purposes in Python programming.
+BITS has two submodules:
 
-Import and use any function/class you like:
+- `bits.seq` for DNA sequence manipulations, and
+- `bits.util` for other, general purposes in Python programming.
+
+Import and use any function/class as follows:
 
 ```python
-> from bits.seq import revcomp_seq
-> print(revcomp_seq('aactg'))
+from bits.seq import revcomp_seq
+print(revcomp_seq('aactg'))
 ```
 
 ```text
-cagtt
+> cagtt
 ```
 
 ## List of functions
 
+If you are using IPython or Jupyter, you can look at the list of functions and classes with the completion function they provide, by typing `from bits.seq import ` + `RET`:
 
+<img src="assets/jupyter_completion_seq.png" width="500">
+
+and `from bits.util import ` + `RET`:
+
+<img src="assets/jupyter_completion_util.png" width="430">
