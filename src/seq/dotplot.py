@@ -1,8 +1,8 @@
 from os.path import join
 from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
-from BITS.plot.matplotlib import show_image
-from BITS.util.proc import run_command
+from bits.util import run_command
+import plotly_light as pl
 from .io import FastaRecord, save_fasta
 
 
@@ -49,7 +49,7 @@ class DotPlot:
                               f"-maxheight {fig_size}",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
-        show_image(out_fname, plot_size, plot_size)
+        pl.show_image(out_fname, plot_size, plot_size)
 
     def plot(self,
              a_seq: Union[str, Type[FastaRecord]],

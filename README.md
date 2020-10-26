@@ -1,13 +1,13 @@
 # BITS: miscellaneous BioInformatics ToolS
 
-Mostly bioinformatics-related, reusable codes as a Python3.7 package.
+Basically bioinformatics-related, reusable Python codes as a package. Developed in Python 3.7 (most of the codes should work with any Python >= 3).
 
 ## How to install
 
 ```bash
-$ git clone https://github.com/yoshihikosuzuki/BITS
-$ cd BITS
-$ python3.7 setup.py install
+$ git clone https://github.com/yoshihikosuzuki/bits
+$ cd bits
+$ python3 setup.py install
 ```
 
 ## How to use
@@ -15,21 +15,10 @@ $ python3.7 setup.py install
 Import and use any function/class you like:
 
 ```python
-> from BITS.seq.util import revcomp_seq
+> from bits.seq.util import revcomp_seq
 > print(revcomp_seq('aactg'))
 ```
 
-```ini
+```text
 cagtt
 ```
-
-## Modules and functions/classes
-
-|      Module       |                             Description                              |
-| :---------------: | :------------------------------------------------------------------: |
-| `BITS.clustering` |              clustering of numerical and sequence data               |
-|    `BITS.plot`    |                         utilities for Plotly                         |
-|    `BITS.seq`     |                 io, alignment, dot plot, cigar, etc.                 |
-|    `BITS.util`    | pickle, subprocess, multiprocessing, pyinterval, job scheduler, etc. |
-
-This [Jupyter Notebook](https://nbviewer.jupyter.org/github/yoshihikosuzuki/BITS/blob/master/docs/usage.ipynb) provides description of each function/class.

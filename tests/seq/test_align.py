@@ -1,8 +1,8 @@
 import unittest
-from BITS.seq.align import EdlibRunner
+from bits.seq.align import EdlibRunner
 
-from BITS.seq.cigar import Cigar
-from BITS.seq.util import revcomp_seq
+from bits.seq.cigar import Cigar
+from bits.seq.util import revcomp_seq
 
 
 class TestEdlibRunner(unittest.TestCase):

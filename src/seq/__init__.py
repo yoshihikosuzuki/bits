@@ -1,1 +1,1 @@
-from . import align, cigar, dotplot, io, kmer, util
+from . import align, cigar, dotplot, io, util
