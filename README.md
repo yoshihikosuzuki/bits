@@ -30,10 +30,10 @@ print(revcomp_seq('aactg'))
 
 ## List of functions
 
-If you are using IPython or Jupyter, you can look at the list of functions and classes with the completion function they provide, by typing `from bits.seq import ` + `RET`:
+If you are using IPython or Jupyter, you can look at the list of functions and classes with the completion function they provide, by typing `from bits.seq import ` + `TAB`:
 
 <img src="assets/jupyter_completion_seq.png" width="500">
 
-and `from bits.util import ` + `RET`:
+and `from bits.util import ` + `TAB`:
 
 <img src="assets/jupyter_completion_util.png" width="430">
