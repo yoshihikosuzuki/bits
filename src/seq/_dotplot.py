@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, splitext
 from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
 import plotly_light as pl
@@ -49,44 +49,43 @@ class DotPlot:
                               f"-maxheight {fig_size}",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
-        pl.show_image(out_fname, plot_size, plot_size)
+        pl.show_image(out_fname,
+                      width=plot_size,
+                      height=plot_size)
 
     def plot(self,
              a_seq: Union[str, Type[FastaRecord]],
              b_seq: Union[str, Type[FastaRecord]],
-             from_fasta: bool = False,
-             a_name: Optional[str] = None,
-             b_name: Optional[str] = None,
              out_fname: Optional[str] = None,
              word_size: int = 10,
              fig_size: int = 750,
-             plot_size: int = 11):
+             plot_size: int = 800):
         """Draw a dot plot between two sequences.
 
         positional arguments:
           @ [a|b]_seq : Sequence, FastaRecord, or fasta file name.
 
         optional arguments:
-          @ from_fasta : `[a|b]_seq` are fasta file names.
-          @ [a|b]_name : Display names of the sequences in the plot.
           @ out_fname  : Output file name of the dot plot.
           @ word_size  : Word size for Gepard.
           @ fig_size   : Size of the png file of the dot plot.
           @ plot_size  : Display size of the plot in Jupyter.
         """
-        def _prep(seq: str, name: str, prolog: str):
-            save_fasta([FastaRecord(name=(name if name is not None
-                                          else seq.name if isinstance(seq, FastaRecord)
-                                          else f"{prolog}/0/0_{len(seq)}"),
-                                    seq=(seq.seq if isinstance(seq, FastaRecord)
-                                         else seq))],
-                       join(self.tmp_dir, f"{prolog}.fasta"))
+        def _prep(seq: str,
+                  prolog: str):
+            if splitext(seq)[1] == ".fasta":
+                return seq
+            out_fname = join(self.tmp_dir, f"{prolog}.fasta")
+            save_fasta(seq if isinstance(seq, FastaRecord)
+                       else FastaRecord(name=f"{prolog}/0/0_{len(seq)}",
+                                        seq=seq),
+                       out_fname)
+            return out_fname
 
-        if not from_fasta:
-            _prep(a_seq, a_name, 'a')
-            _prep(b_seq, b_name, 'b')
-        self._plot(a_seq if from_fasta else join(self.tmp_dir, "a.fasta"),
-                   b_seq if from_fasta else join(self.tmp_dir, "b.fasta"),
+        self._plot(_prep(a_seq, 'a'),
+                   _prep(b_seq, 'b'),
                    (out_fname if out_fname is not None
                     else join(self.tmp_dir, "dotplot.png")),
-                   word_size, fig_size, plot_size)
+                   word_size,
+                   fig_size,
+                   plot_size)

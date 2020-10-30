@@ -2,7 +2,7 @@ from typing import Optional, Sequence, Tuple, List, Dict
 from logzero import logger
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
-from ._seqtype import FastaRecord, FastqRecord
+from ._type import FastaRecord, FastqRecord
 from ._util import split_seq
 
 

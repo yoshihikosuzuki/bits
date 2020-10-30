@@ -1,8 +1,8 @@
-import os
+from os.path import splitext
 from typing import Optional, Sequence, Tuple, List, Dict
 from logzero import logger
 from ..util import run_command
-from ._seqtype import DazzRecord, SeqInterval
+from ._type import DazzRecord, SeqInterval
 
 
 def fasta_to_db(fasta_fname: str,
@@ -23,7 +23,7 @@ def load_db(db_fname: str,
     """Load read IDs, original header names, and sequences from a DAZZ_DB file.
     `dbid_range` is e.g. `(1, 10)`, which is equal to `$ DBdump {db_fname} 1-10`.
     """
-    mode = os.path.splitext(db_fname)[1]   # ".db" or ".dam"
+    mode = splitext(db_fname)[1]   # ".db" or ".dam"
     n_reads = (db_to_n_reads(db_fname) if dbid_range is None
                else dbid_range[1] - dbid_range[0] + 1)
     seqs = [None] * n_reads
