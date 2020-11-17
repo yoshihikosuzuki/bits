@@ -73,7 +73,7 @@ class DotPlot:
         """
         def _prep(seq: str,
                   prolog: str):
-            if splitext(seq)[1] == ".fasta":
+            if isinstance(seq, str) and splitext(seq)[1] == ".fasta":
                 return seq
             out_fname = join(self.tmp_dir, f"{prolog}.fasta")
             save_fasta(seq if isinstance(seq, FastaRecord)

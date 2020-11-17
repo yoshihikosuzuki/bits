@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, List, Dict
+from typing import Union, Optional, Sequence, Tuple, List, Dict
 from logzero import logger
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
@@ -37,20 +37,20 @@ def load_fastq(in_fname: str,
     return seqs
 
 
-def save_fasta(reads: Sequence[FastaRecord],
+def save_fasta(reads: Union[FastaRecord, Sequence[FastaRecord]],
                out_fname: str,
                width: int = -1) -> None:
     """If `width` > 0, newlines are inserted at every `width` bp."""
     assert width != 0, "`width` must not be 0"
     with open(out_fname, 'w') as f:
-        for read in reads:
+        for read in ([reads] if isinstance(reads, FastaRecord) else reads):
             seq = (read.seq if width < 0
                    else '\n'.join(split_seq(read.seq, width)))
             f.write(f">{read.name}\n{seq}\n")
 
 
-def save_fastq(reads: Sequence[FastqRecord],
+def save_fastq(reads: Union[FastqRecord, Sequence[FastqRecord]],
                out_fname: str) -> None:
     with open(out_fname, 'w') as f:
-        for read in reads:
+        for read in ([reads] if isinstance(reads, FastqRecord) else reads):
             f.write(f"@{read.name}\n{read.seq}\n+\n{read.qual}\n")
