@@ -2,6 +2,19 @@ from typing import List
 import numpy as np
 
 
+def findall(seq: str, query: str) -> List[int]:
+    pos = []
+    offset = 0
+    while True:
+        i = seq.find(query)
+        if i == -1:
+            break
+        pos.append(offset + i)
+        seq = seq[i + 1:]
+        offset += i + 1
+    return pos
+
+
 def split_seq(seq: str, width: int) -> List[str]:
     return [seq[i:i + width] for i in range(0, len(seq), width)]
 

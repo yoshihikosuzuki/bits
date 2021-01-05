@@ -83,10 +83,13 @@ def load_db_track(db_fname: str,
 
 def db_to_n_blocks(db_fname: str) -> int:
     """Extract the number of blocks from a DAZZ_DB file."""
+    n_blocks = None
     with open(db_fname, 'r') as f:
         for line in f:
             if line.startswith("blocks"):
-                return int(line.split('=')[1].strip())
+                n_blocks = int(line.split('=')[1].strip())
+    if n_blocks is not None:
+        return n_blocks
     logger.error(f"{db_fname}: No information on the number of blocks")
 
 

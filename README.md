@@ -2,6 +2,14 @@
 
 Basically bioinformatics-related, reusable Python codes as a package. Developed in Python 3.7, but most of the codes should work with any Python >= 3.
 
+## Requirements
+
+- Python packages listed in `setup.cfg` (automatically installed)
+- [Seqkit](https://bioinf.shenwei.me/seqkit/) (if you use `bits.seq.load_fast[a|q]` with `range=` option)
+- [Edlib](https://github.com/Martinsos/edlib) (if you use `bits.seq.EdlibRunner`)
+- [Gepard](https://github.com/univieCUBE/gepard) (if you use `bits.seq.DotPlot`)
+- [DAZZ_DB](https://github.com/thegenemyers/DAZZ_DB) (if you use `bits.seq.load_db` etc)
+
 ## How to install
 
 ```bash
