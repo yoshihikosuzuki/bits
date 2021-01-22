@@ -7,6 +7,14 @@ from ._type import FastaRecord, FastqRecord
 from ._util import split_seq
 
 
+def _change_case(seq: str, case: str) -> str:
+    assert case in ("original", "lower", "upper"), \
+        "`case` must be 'original', 'lower', or 'upper'"
+    return (seq if case == "original"
+            else seq.lower() if case == "lower"
+            else seq.upper())
+
+
 def load_fasta(in_fname: str,
                id_range: Optional[Union[int, Tuple[int, int]]] = None,
                case: str = "original") -> List[FastaRecord]:
@@ -20,17 +28,10 @@ def load_fasta(in_fname: str,
       @ case     : Of the sequence to be stored.
                    Must be one of {"original", "lower", "upper"}.
     """
-    def _change_case(seq: str) -> str:
-        return (seq if case == "original"
-                else seq.lower() if case == "lower"
-                else seq.upper())
-
-    assert case in ("original", "lower", "upper"), \
-        "`case` must be 'original', 'lower', or 'upper'"
     if id_range is None:
         with open(in_fname, 'r') as f:
             seqs = [FastaRecord(name=name,
-                                seq=_change_case(seq))
+                                seq=_change_case(seq, case))
                     for name, seq in list(SimpleFastaParser(f))]
     else:
         if isinstance(id_range, int):
@@ -38,25 +39,42 @@ def load_fasta(in_fname: str,
         command = f"seqkit range -w0 -r{':'.join(map(str, id_range))} {in_fname}"
         out = run_command(command).strip().split('\n')
         assert len(out) % 2 == 0
-        seqs = [FastaRecord(name=out[i * 2],
-                            seq=_change_case(out[i * 2 + 1]))
+        seqs = [FastaRecord(name=out[i * 2][1:],
+                            seq=_change_case(out[i * 2 + 1], case))
                 for i in range(len(out) // 2)]
     logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
     return seqs
 
 
 def load_fastq(in_fname: str,
+               id_range: Optional[Union[int, Tuple[int, int]]] = None,
                case: str = "original") -> List[FastqRecord]:
-    """`case` must be one of {"original" (default), "lower", "upper"}."""
-    assert case in ("original", "lower", "upper"), \
-        "`case` must be 'original', 'lower', or 'upper'"
-    with open(in_fname, 'r') as f:
-        seqs = [FastqRecord(name=name,
-                            seq=(seq if case == "original"
-                                 else seq.lower() if case == "lower"
-                                 else seq.upper()),
-                            qual=qual)
-                for name, seq, qual in FastqGeneralIterator(f)]
+    """Load (specified range of) a fastq file.
+
+    positional arguments:
+      @ in_fname : Input fastq file name.
+
+    optional arguments:
+      @ id_range : 1-indexed read ID or tuple of read IDs to be read.
+      @ case     : Of the sequence to be stored.
+                   Must be one of {"original", "lower", "upper"}.
+    """
+    if id_range is None:
+        with open(in_fname, 'r') as f:
+            seqs = [FastqRecord(name=name,
+                                seq=_change_case(seq, case),
+                                qual=qual)
+                    for name, seq, qual in FastqGeneralIterator(f)]
+    else:
+        if isinstance(id_range, int):
+            id_range = (id_range, id_range)
+        command = f"seqkit range -r{':'.join(map(str, id_range))} {in_fname}"
+        out = run_command(command).strip().split('\n')
+        assert len(out) % 4 == 0
+        seqs = [FastqRecord(name=out[i * 2][1:],
+                            seq=_change_case(out[i * 2 + 1], case),
+                            qual=out[i * 2 + 3])
+                for i in range(len(out) // 4)]
     logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
     return seqs
 
