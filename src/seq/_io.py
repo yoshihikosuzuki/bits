@@ -71,9 +71,9 @@ def load_fastq(in_fname: str,
         command = f"seqkit range -r{':'.join(map(str, id_range))} {in_fname}"
         out = run_command(command).strip().split('\n')
         assert len(out) % 4 == 0
-        seqs = [FastqRecord(name=out[i * 2][1:],
-                            seq=_change_case(out[i * 2 + 1], case),
-                            qual=out[i * 2 + 3])
+        seqs = [FastqRecord(name=out[i * 4][1:],
+                            seq=_change_case(out[i * 4 + 1], case),
+                            qual=out[i * 4 + 3])
                 for i in range(len(out) // 4)]
     logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
     return seqs
