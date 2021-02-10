@@ -1,7 +1,6 @@
 from typing import Union, Optional, Sequence, Tuple, List, Dict
 from logzero import logger
-from Bio.SeqIO.FastaIO import SimpleFastaParser
-from Bio.SeqIO.QualityIO import FastqGeneralIterator
+from fastx import Fastx
 from ..util._proc import run_command
 from ._type import FastaRecord, FastqRecord
 from ._util import split_seq
@@ -29,10 +28,9 @@ def load_fasta(in_fname: str,
                    Must be one of {"original", "lower", "upper"}.
     """
     if id_range is None:
-        with open(in_fname, 'r') as f:
-            seqs = [FastaRecord(name=name,
-                                seq=_change_case(seq, case))
-                    for name, seq in list(SimpleFastaParser(f))]
+        seqs = [FastaRecord(name=name,
+                            seq=_change_case(seq, case))
+                for name, seq, qual in Fastx(in_fname)]
     else:
         if isinstance(id_range, int):
             id_range = (id_range, id_range)
@@ -60,11 +58,10 @@ def load_fastq(in_fname: str,
                    Must be one of {"original", "lower", "upper"}.
     """
     if id_range is None:
-        with open(in_fname, 'r') as f:
-            seqs = [FastqRecord(name=name,
-                                seq=_change_case(seq, case),
-                                qual=qual)
-                    for name, seq, qual in FastqGeneralIterator(f)]
+        seqs = [FastqRecord(name=name,
+                            seq=_change_case(seq, case),
+                            qual=qual)
+                for name, seq, qual in Fastx(in_fname)]
     else:
         if isinstance(id_range, int):
             id_range = (id_range, id_range)

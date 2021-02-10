@@ -1,8 +1,7 @@
 from os.path import join, splitext
 from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional
-import plotly_light as pl
-from ..util import run_command
+from ..util import run_command, show_image
 from ._io import FastaRecord, save_fasta
 
 
@@ -49,9 +48,9 @@ class DotPlot:
                               f"-maxheight {fig_size}",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
-        pl.show_image(out_fname,
-                      width=plot_size,
-                      height=plot_size)
+        show_image(out_fname,
+                   width=plot_size,
+                   height=plot_size)
 
     def plot(self,
              a_seq: Union[str, Type[FastaRecord]],
@@ -59,7 +58,7 @@ class DotPlot:
              out_fname: Optional[str] = None,
              word_size: int = 10,
              fig_size: int = 750,
-             plot_size: int = 800):
+             plot_size: int = 11):
         """Draw a dot plot between two sequences.
 
         positional arguments:
@@ -68,8 +67,8 @@ class DotPlot:
         optional arguments:
           @ out_fname  : Output file name of the dot plot.
           @ word_size  : Word size for Gepard.
-          @ fig_size   : Size of the png file of the dot plot.
-          @ plot_size  : Display size of the plot in Jupyter.
+          @ fig_size   : Size of the png file of the dot plot (in pixel).
+          @ plot_size  : Display size of the plot image (in inch).
         """
         def _prep(seq: str,
                   prolog: str):
