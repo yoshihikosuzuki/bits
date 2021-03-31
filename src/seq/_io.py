@@ -28,8 +28,8 @@ def load_fasta(in_fname: str,
                    Must be one of {"original", "lower", "upper"}.
     """
     if id_range is None:
-        seqs = [FastaRecord(name=name,
-                            seq=_change_case(seq, case))
+        seqs = [FastaRecord(name=name.decode('utf-8'),
+                            seq=_change_case(seq.decode('utf-8'), case))
                 for name, seq, qual in Fastx(in_fname)]
     else:
         if isinstance(id_range, int):
@@ -58,9 +58,9 @@ def load_fastq(in_fname: str,
                    Must be one of {"original", "lower", "upper"}.
     """
     if id_range is None:
-        seqs = [FastqRecord(name=name,
-                            seq=_change_case(seq, case),
-                            qual=qual)
+        seqs = [FastqRecord(name=name.decode('utf-8'),
+                            seq=_change_case(seq.decode('utf-8'), case),
+                            qual=qual.decode('utf-8'))
                 for name, seq, qual in Fastx(in_fname)]
     else:
         if isinstance(id_range, int):

@@ -9,29 +9,40 @@ from ._io import FastaRecord, save_fasta
 class DotPlot:
     """Draw dot plot between two sequences or fasta files with Gepard.
 
-    usage in Jupyter:
-      > gepard_jar = "/path/to/gepard/dist/Gepard-1.40.jar"
-      > gepard_mat = "/path/to/gepard/resources/matrices/edna.mat"
-      > dp = DotPlot(gepard_jar, gepard_mat)
+    Usage example in Jupyter:
+      > gepard_root = "/path/to/gepard"
+      > dp = DotPlot(gepard_root)
       > dp.plot(seq1, seq2)
 
-    positional variables:
-      @ gepard_jar : Path to a jar executable of Gepard.
-      @ gepard_mat : Path to a score matrix of Gepard.
+    positional arguments:
+      (One of `gepard_root` or `gepard_[jar|mat]` must be specified.)
+      @ gepard_root : Path to the root directory of Gepard.
+                      If specified, `f"{gepard_root}/dist/Gepard-1.40.jar"` and
+                      `f"{gepard_root}/resources/matrices/edna.mat"` are used as
+                      `gepard_jar` and `gepard_mat`.
+      @ gepard_jar  : Path to a jar executable of Gepard.
+      @ gepard_mat  : Path to a score matrix of Gepard.
 
-    optional variables:
+    optional arguments:
       @ tmp_dir : Directory for generating fasta files and plots.
     """
-    gepard_jar: InitVar[str]
-    gepard_mat: InitVar[str]
+    gepard_root: InitVar[Optional[str]] = None
+    gepard_jar: InitVar[Optional[str]] = None
+    gepard_mat: InitVar[Optional[str]] = None
     gepard: str = field(init=False)
     tmp_dir: str = "tmp"
 
-    def __post_init__(self, gepard_jar, gepard_mat):
-        run_command(f"mkdir -p {self.tmp_dir}")
-        self.gepard = ' '.join([f"java -cp {gepard_jar}",
+    def __post_init__(self, gepard_root, gepard_jar, gepard_mat):
+        assert gepard_root is not None or (gepard_jar is not None and gepard_mat is not None), \
+            "`gepard_root` or `gepard_[jar|mat]` must be specified"
+        _gepard_jar = (gepard_jar if gepard_jar is not None
+                       else f"{gepard_root}/dist/Gepard-1.40.jar")
+        _gepard_mat = (gepard_mat if gepard_mat is not None
+                       else f"{gepard_root}/resources/matrices/edna.mat")
+        self.gepard = ' '.join([f"java -cp {_gepard_jar}",
                                 "org.gepard.client.cmdline.CommandLine",
-                                f"-matrix {gepard_mat}"])
+                                f"-matrix {_gepard_mat}"])
+        run_command(f"mkdir -p {self.tmp_dir}")
 
     def _plot(self,
               a_fname: str,
@@ -48,9 +59,7 @@ class DotPlot:
                               f"-maxheight {fig_size}",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
-        show_image(out_fname,
-                   width=plot_size,
-                   height=plot_size)
+        show_image(out_fname, plot_size)
 
     def plot(self,
              a_seq: Union[str, Type[FastaRecord]],

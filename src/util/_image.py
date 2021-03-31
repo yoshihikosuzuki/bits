@@ -3,8 +3,7 @@ import matplotlib.image as img
 
 
 def show_image(img_fname: str,
-               width: int = 11,
-               height: int = 11):
+               size: int = 11):
     """Show an image file using matplotlib.
 
     positional arguments:
@@ -14,7 +13,7 @@ def show_image(img_fname: str,
       @ width  : In inch.
       @ height : In inch.
     """
-    _, ax = plt.subplots(figsize=(width, height))
+    _, ax = plt.subplots(figsize=(size, size))
     ax.tick_params(labelbottom=False, bottom=False)
     ax.tick_params(labelleft=False, left=False)
     plt.imshow(img.imread(img_fname))
