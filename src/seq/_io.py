@@ -1,4 +1,4 @@
-from typing import Union, Optional, Sequence, Tuple, List, Dict
+from typing import Union, Optional, Sequence, Tuple, List
 from logzero import logger
 from fastx import Fastx
 from ..util._proc import run_command

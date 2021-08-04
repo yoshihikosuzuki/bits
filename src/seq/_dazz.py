@@ -1,8 +1,9 @@
 from os.path import splitext
-from typing import Union, Optional, Sequence, Tuple, List, Dict
+from typing import Union, Optional, Tuple, List, Dict
 from logzero import logger
 from ..util import run_command
 from ._type import DazzRecord, SeqInterval
+from ._io import _change_case
 
 
 def fasta_to_db(fasta_fname: str,
@@ -19,7 +20,8 @@ def fasta_to_db(fasta_fname: str,
 
 
 def load_db(db_fname: str,
-            dbid_range: Optional[Union[int, Tuple[int, int]]] = None) -> List[DazzRecord]:
+            dbid_range: Optional[Union[int, Tuple[int, int]]] = None,
+            case: str = "original") -> List[DazzRecord]:
     """Load read IDs, original header names, and sequences from a DAZZ_DB file.
     `dbid_range` is e.g. `(1, 10)`, which is equal to `$ DBdump {db_fname} 1-10`.
     """
@@ -48,7 +50,9 @@ def load_db(db_fname: str,
                 name = f"{prolog}/{well}/{start}_{end}"
         elif line.startswith('S'):
             _, _, seq = line.split()
-            seqs[i] = DazzRecord(id=int(dazz_id), name=name, seq=seq)
+            seqs[i] = DazzRecord(id=int(dazz_id),
+                                 name=name,
+                                 seq=_change_case(seq, case))
             i += 1
     assert i == n_reads
     logger.info(f"{db_fname}: {n_reads} sequences loaded")
