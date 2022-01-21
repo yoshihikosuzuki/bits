@@ -175,7 +175,7 @@ def run_distribute(func: Callable,
             f.write(f"""\
 import logging
 import logzero
-from BITS.util.io import load_pickle, save_pickle
+from bits.util import load_pickle, save_pickle
 from {func.__module__} import {func.__name__}
 logzero.loglevel(logging.{"INFO" if log_level == "info" else "DEBUG"})
 args = load_pickle("{_args_fname}")

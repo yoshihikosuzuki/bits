@@ -27,8 +27,9 @@ class Cigar(str):
         """Iterator over tuples of length and operation."""
         length = ""
         for c in super().__iter__():
-            if c in CIGAR_CHARS:
-                yield (int(length), c)
+            # if c in CIGAR_CHARS:
+            if not c.isnumeric():
+                yield (int(length), c) if length != "" else (1, c)
                 length = ""
             else:
                 length += c
