@@ -126,15 +126,14 @@ class Scheduler:
 def run_distribute(func: Callable,
                    args: Sequence,
                    shared_args: Mapping,
-                   scheduler: Optional[Scheduler],
+                   scheduler: Scheduler,
                    n_distribute: int,
                    n_core: int,
                    max_cpu_hour: Optional[int] = None,
                    max_mem_gb: Optional[int] = None,
-                   tmp_dname: str = "tmp_distribute",
                    job_name: str = "job",
-                   out_fname: str = "out.pkl",
-                   log_level: str = "info") -> List:
+                   work_dir: str = "tmp",
+                   wait: bool = True) -> List:
     """Distribute `[func(arg, **shared_args, n_core=n_core) for arg in args]`
     into `n_distribute` jobs (`n_core` per job) with a job scheduler.
 
@@ -148,57 +147,63 @@ def run_distribute(func: Callable,
       @ n_core       : Number of cores per job.
 
     optional arguments:
-      @ tmp_dname : Directory name for intermediate files.
-      @ job_name  : Display job name.
-      @ out_fname : Output file name.
-      @ log_level : Log level. Must be one of {"info", "debug"}.
+      @ job_name : Display job name.
+      @ work_dir : Directory where scripts and temp files are written.
+      @ wait     : Wait for the distributed jobs to be finished or not.
     """
     assert isinstance(args, Sequence), \
         "`args` must be a Sequence object"
     assert isinstance(shared_args, Mapping), \
         "`shared_args` must be a Mapping object"
-    assert log_level in ("info", "debug"), "Invalid name"
-    run_command(f"mkdir -p {tmp_dname}; rm -f {tmp_dname}/*")
+    assert len(args) == n_distribute, \
+        f"`len(args)` ({len(args)}) != `n_distribute` ({n_distribute})"
+
+    # Create work_dir
+    run_command(f"mkdir -p {work_dir}")
+
     # Save shared arguments as a single pickle object
-    shared_args_fname = f"{tmp_dname}/shared_args.pkl"
+    shared_args_fname = f"{work_dir}/shared_args.pkl"
     save_pickle(shared_args, shared_args_fname)
+
     # Split and save arguments, and sumit jobs
     n_args_per_job = -(-len(args) // n_distribute)
     job_ids = []
-    for i in range(n_distribute):
-        index = str(i + 1).zfill(int(log10(n_distribute) + 1))
-        _args_fname = f"{tmp_dname}/args.pkl.{index}"
-        save_pickle(args[i * n_args_per_job:(i + 1) * n_args_per_job],
-                    _args_fname)
-        _py_fname = f"{tmp_dname}/scatter.py.{index}"
+    for index in range(n_distribute):
+        # Save arguments for the job
+        # index = str(i + 1).zfill(int(log10(n_distribute) + 1))
+        _args_fname = f"{work_dir}/args.pkl.{index}"
+        # save_pickle(args[i * n_args_per_job:(i + 1) * n_args_per_job],
+        #             _args_fname)
+        save_pickle(args[index], _args_fname)
+
+        # Create a python script for running the function
+        _py_fname = f"{work_dir}/scatter.py.{index}"
         with open(_py_fname, 'w') as f:
             f.write(f"""\
-import logging
-import logzero
-from bits.util import load_pickle, save_pickle
+from bits.util import load_pickle
 from {func.__module__} import {func.__name__}
-logzero.loglevel(logging.{"INFO" if log_level == "info" else "DEBUG"})
+
 args = load_pickle("{_args_fname}")
 shared_args = load_pickle("{shared_args_fname}")
-save_pickle({func.__name__}(args, n_core={n_core}, **shared_args),
-            "{tmp_dname}/{out_fname}.{index}")
+{func.__name__}(args, n_core={n_core}, **shared_args)
 """)
+
+        # Submit the job
         job_ids.append(scheduler.submit(f"python {_py_fname}",
-                                        f"{tmp_dname}/scatter.sh.{index}",
+                                        f"{work_dir}/scatter.sh.{index}",
                                         job_name=f"{job_name}_scatter",
-                                        log_fname=f"{tmp_dname}/log.{index}",
+                                        log_fname=f"{work_dir}/log.{index}",
                                         n_core=n_core,
                                         max_cpu_hour=max_cpu_hour,
                                         max_mem_gb=max_mem_gb))
-    # Merge results
-    scheduler.submit("sleep 1s",
-                     f"{tmp_dname}/gather.sh",
-                     job_name=f"{job_name}_gather",
-                     log_fname=f"{tmp_dname}/log.gather",
-                     depend_job_ids=job_ids,
-                     wait=True)
-    merged = []
-    script = f"find {tmp_dname} -name '{out_fname}.*' | sort"
-    for fname in run_command(script).strip().split('\n'):
-        merged += load_pickle(fname)
-    return merged
+
+    if wait:
+        # Wait results
+        scheduler.submit("sleep 1s",
+                        f"{work_dir}/gather.sh",
+                        job_name=f"{job_name}_gather",
+                        log_fname=f"{work_dir}/log.gather",
+                        depend_job_ids=job_ids,
+                        wait=True)
+
+    return
