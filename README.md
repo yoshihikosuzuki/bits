@@ -13,9 +13,15 @@ Basically bioinformatics-related, reusable Python3 codes as a package.
 ## How to install
 
 ```bash
-$ git clone https://github.com/yoshihikosuzuki/bits
-$ cd bits
-$ pip install .
+git clone https://github.com/yoshihikosuzuki/bits
+cd bits
+pip install .
+```
+
+To run unit tests:
+
+```bash
+python -m unittest
 ```
 
 ## How to use
