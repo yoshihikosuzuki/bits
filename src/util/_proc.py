@@ -1,4 +1,4 @@
-from typing import Optional
+import sys
 import subprocess as sp
 from multiprocessing import Process
 from multiprocessing.pool import Pool
@@ -6,18 +6,24 @@ from logzero import logger
 
 
 def run_command(command: str,
-                err_msg: Optional[str] = None) -> str:
+                err_msg: str = "",
+                exit_on_error: bool = True) -> str:
     """General-purpose shell command runner.
 
     positional arguments:
-      @ command : A string evaluated as a line in bash.
+      @ command: A string evaluated as a line in bash.
+      @ err_msg: Any text shown on error.
+      @ exit_on_error: If True, exit the process on error.
     """
     try:
         out = sp.check_output(command, shell=True)
     except sp.CalledProcessError as proc:
-        _err_msg = f"({err_msg})" if err_msg is not None else ""
-        logger.error(f"Error raised with command: {command} {_err_msg}")
+        if err_msg != "":
+            err_msg = f"({err_msg})"
         logger.exception(proc)
+        logger.error(f"Command failed: {command} {err_msg}")
+        if exit_on_error:
+            sys.exit(1)
         return proc.output.decode("utf-8")
     else:
         return out.decode("utf-8")
