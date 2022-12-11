@@ -159,7 +159,7 @@ class EdlibRunner:
         """Align `query` to `target`."""
         if ( self.mode in ("glocal", "prefix")
              and len(query) - len(target) >= 10
-             and len(query) > 1.1 * max(len(target)) ):
+             and len(query) > 1.1 * len(target) ):
             logger.warning(f"query ({len(query)} bp) is much longer than "
                            f"target ({len(target)} bp) unexpectedly")
         return (self._align_cyclic if self.cyclic
