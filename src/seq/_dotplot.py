@@ -1,6 +1,6 @@
 from os.path import join, splitext
 from dataclasses import dataclass, field, InitVar
-from typing import Type, Union, Optional
+from typing import Type, Union, Optional, Tuple
 from ..util import run_command, show_image
 from ._io import FastaRecord, save_fasta
 
@@ -49,14 +49,19 @@ class DotPlot:
               b_fname: str,
               out_fname: str,
               word_size: int,
-              fig_size: int,
+              fig_size: Union[int, Tuple[Optional[int], Optional[int]]],
               plot_size: int):
+        if isinstance(fig_size, int):
+            fig_width = fig_size
+            fig_height = fig_size
+        else:
+            fig_width, fig_height = fig_size
         run_command(' '.join(["unset DISPLAY;",
                               f"{self.gepard}",
                               f"-seq1 {a_fname}",
                               f"-seq2 {b_fname}",
-                              f"-maxwidth {fig_size}",
-                              f"-maxheight {fig_size}",
+                              f"-maxwidth {fig_width}" if fig_width is not None else "",
+                              f"-maxheight {fig_height}" if fig_height is not None else "",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
         show_image(out_fname, plot_size)
@@ -66,7 +71,7 @@ class DotPlot:
              b_seq: Union[str, Type[FastaRecord]],
              out_fname: Optional[str] = None,
              word_size: int = 10,
-             fig_size: int = 750,
+             fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 750,
              plot_size: int = 11):
         """Draw a dot plot between two sequences.
 
