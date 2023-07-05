@@ -1,6 +1,6 @@
 from os.path import join, splitext
 from dataclasses import dataclass, field, InitVar
-from typing import Type, Union, Optional
+from typing import Type, Union, Optional, List
 from ..util import run_command, show_image
 from ._io import FastaRecord, save_fasta
 
@@ -44,26 +44,9 @@ class DotPlot:
                                 f"-matrix {_gepard_mat}"])
         run_command(f"mkdir -p {self.tmp_dir}")
 
-    def _plot(self,
-              a_fname: str,
-              b_fname: str,
-              out_fname: str,
-              word_size: int,
-              fig_size: int,
-              plot_size: int):
-        run_command(' '.join(["unset DISPLAY;",
-                              f"{self.gepard}",
-                              f"-seq1 {a_fname}",
-                              f"-seq2 {b_fname}",
-                              f"-maxwidth {fig_size}",
-                              f"-maxheight {fig_size}",
-                              f"-word {word_size}",
-                              f"-outfile {out_fname}"]))
-        show_image(out_fname, plot_size)
-
     def plot(self,
-             a_seq: Union[str, Type[FastaRecord]],
-             b_seq: Union[str, Type[FastaRecord]],
+             a_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
+             b_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
              out_fname: Optional[str] = None,
              word_size: int = 10,
              fig_size: int = 750,
@@ -79,21 +62,31 @@ class DotPlot:
           @ fig_size   : Size of the png file of the dot plot (in pixel).
           @ plot_size  : Display size of the plot image (in inch).
         """
-        def _prep(seq: str,
-                  prolog: str):
-            if isinstance(seq, str) and splitext(seq)[1] == ".fasta":
-                return seq
-            out_fname = join(self.tmp_dir, f"{prolog}.fasta")
-            save_fasta(seq if isinstance(seq, FastaRecord)
-                       else FastaRecord(name=f"{prolog}/0/0_{len(seq)}",
-                                        seq=seq),
-                       out_fname)
-            return out_fname
+        def _prep(seqs: str, prolog: str):
+            if isinstance(seqs, str) and splitext(seqs)[1] == ".fasta":   # fasta file name
+                return seqs
 
-        self._plot(_prep(a_seq, 'a'),
-                   _prep(b_seq, 'b'),
-                   (out_fname if out_fname is not None
-                    else join(self.tmp_dir, "dotplot.png")),
-                   word_size,
-                   fig_size,
-                   plot_size)
+            out_fasta = join(self.tmp_dir, f"{prolog}.fasta")
+            if not isinstance(seqs, list):
+                seqs = [seqs]
+            save_fasta([seq if isinstance(seq, FastaRecord)
+                        else FastaRecord(name=f"{prolog}/{i}/0_{len(seq)}",
+                                         seq=seq)
+                        for i, seq in enumerate(seqs)],
+                       out_fname)
+            return out_fasta
+
+        a_fasta = _prep(a_seqs, 'a')
+        b_fasta = _prep(b_seqs, 'b')
+        if out_fname is None:
+            out_fname = f"{self.tmp_dir}/dotplot.png"
+
+        run_command(' '.join(["unset DISPLAY;",
+                              f"{self.gepard}",
+                              f"-seq1 {a_fasta}",
+                              f"-seq2 {b_fasta}",
+                              f"-maxwidth {fig_size}",
+                              f"-maxheight {fig_size}",
+                              f"-word {word_size}",
+                              f"-outfile {out_fname}"]))
+        show_image(out_fname, plot_size)
