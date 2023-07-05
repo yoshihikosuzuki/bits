@@ -49,7 +49,7 @@ class DotPlot:
              b_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
              out_fname: Optional[str] = None,
              word_size: int = 10,
-             fig_size: int = 750,
+             fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 750,
              plot_size: int = 11):
         """Draw a dot plot between two sequences.
 
