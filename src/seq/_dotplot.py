@@ -73,7 +73,7 @@ class DotPlot:
                         else FastaRecord(name=f"{prolog}/{i}/0_{len(seq)}",
                                          seq=seq)
                         for i, seq in enumerate(seqs)],
-                       out_fname)
+                       out_fasta)
             return out_fasta
 
         a_fasta = _prep(a_seqs, 'a')
