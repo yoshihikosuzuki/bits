@@ -36,6 +36,7 @@ class Scheduler:
                job_name: str,
                log_fname: str = "log",
                n_core: int = 1,
+               host_name: Optional[str] = None,
                max_cpu_hour: Optional[int] = None,
                max_mem_gb: Optional[int] = None,
                depend_job_ids: Optional[List[str]] = None,
@@ -61,6 +62,7 @@ class Scheduler:
                   else self.gen_slurm_header)(job_name,
                                               log_fname,
                                               n_core,
+                                              host_name,
                                               max_cpu_hour,
                                               max_mem_gb,
                                               depend_job_ids,
@@ -77,6 +79,7 @@ class Scheduler:
                        job_name: str,
                        log_fname: str,
                        n_core: int,
+                       host_name: Optional[str],
                        max_cpu_hour: Optional[int],
                        max_mem_gb: Optional[int],
                        depend_job_ids: Optional[List[str]],
@@ -90,6 +93,8 @@ class Scheduler:
                                  f"#$ -q {self.queue_name}"
                                  if self.queue_name is not None else "",
                                  f"#$ -pe smp {n_core}",
+                                 f"#$ -l hostname={host_name}"
+                                 if host_name is not None else "",
                                  f"#$ -l h_cpu={max_cpu_hour}"
                                  if max_cpu_hour is not None else "",
                                  f"#$ -l mem_total={max_mem_gb}G"
@@ -102,6 +107,7 @@ class Scheduler:
                          job_name: str,
                          log_fname: str,
                          n_core: int,
+                         host_name: Optional[str],
                          max_cpu_hour: Optional[int],
                          max_mem_gb: Optional[int],
                          depend_job_ids: Optional[List[str]],
@@ -129,6 +135,7 @@ def run_distribute(func: Callable,
                    scheduler: Scheduler,
                    n_distribute: int,
                    n_core: int,
+                   host_name: Optional[str] = None,
                    max_cpu_hour: Optional[int] = None,
                    max_mem_gb: Optional[int] = None,
                    job_name: str = "job",
@@ -194,6 +201,7 @@ shared_args = load_pickle("{shared_args_fname}")
                                         job_name=f"{job_name}_scatter",
                                         log_fname=f"{work_dir}/log.{index}",
                                         n_core=n_core,
+                                        host_name=host_name,
                                         max_cpu_hour=max_cpu_hour,
                                         max_mem_gb=max_mem_gb))
 
@@ -203,6 +211,7 @@ shared_args = load_pickle("{shared_args_fname}")
                         f"{work_dir}/gather.sh",
                         job_name=f"{job_name}_gather",
                         log_fname=f"{work_dir}/log.gather",
+                        host_name=host_name,
                         depend_job_ids=job_ids,
                         wait=True)
 
