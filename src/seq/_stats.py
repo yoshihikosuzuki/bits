@@ -115,7 +115,9 @@ def calc_nx(
     s = 0
     for l in sorted(lens, reverse=True):
         s += l
-        while s > thres[thres_idx]:
+        while s >= thres[thres_idx]:
             nx[thres_idx] = l
             thres_idx += 1
+            if thres_idx > 100:
+                break
     return nx
