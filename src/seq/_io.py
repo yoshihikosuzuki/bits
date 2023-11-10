@@ -14,11 +14,27 @@ def _change_case(seq: str, case: str) -> str:
             else seq.upper())
 
 
+def load_fastx(in_fname: str,
+               id_range: Optional[Union[int, Tuple[int, int]]] = None,
+               case: str = "original",
+               verbose: bool = True) -> List[Union[FastaRecord, FastqRecord]]:
+    """Utility function in case one doesn't know sequence type.
+    """
+    FASTA_SUFFIXES = [".fa", ".fna", ".fasta"]
+    FASTQ_SUFFIXES = [".fq", ".fastq"]
+    if in_fname.endswith(tuple(FASTA_SUFFIXES + [f"{suf}.gz" for suf in FASTA_SUFFIXES])):
+        return load_fasta(in_fname, id_range, case, verbose)
+    elif in_fname.endswith(tuple(FASTQ_SUFFIXES + [f"{suf}.gz" for suf in FASTQ_SUFFIXES])):
+        return load_fastq(in_fname, id_range, case, verbose)
+    else:
+        assert False, f"Cannot guess file type: {in_fname}"
+
+
 def load_fasta(in_fname: str,
                id_range: Optional[Union[int, Tuple[int, int]]] = None,
                case: str = "original",
                verbose: bool = True) -> List[FastaRecord]:
-    """Load (specified range of) a fasta file.
+    """Load (specified range of) a fasta file. Gzipped files are OK.
 
     positional arguments:
       @ in_fname : Input fasta file name.
@@ -51,7 +67,7 @@ def load_fastq(in_fname: str,
                id_range: Optional[Union[int, Tuple[int, int]]] = None,
                case: str = "original",
                verbose: bool = True) -> List[FastqRecord]:
-    """Load (specified range of) a fastq file.
+    """Load (specified range of) a fastq file. Gzipped files are OK.
 
     positional arguments:
       @ in_fname : Input fastq file name.
@@ -82,28 +98,28 @@ def load_fastq(in_fname: str,
     return seqs if not is_single else seqs[0]
 
 
-def save_fasta(reads: Union[FastaRecord, Sequence[FastaRecord]],
+def save_fasta(seqs: Union[FastaRecord, Sequence[FastaRecord]],
                out_fname: str,
                width: int = -1,
                verbose: bool = True) -> None:
     """If `width` > 0, newlines are inserted at every `width` bp."""
     assert width != 0, "`width` must not be 0"
     with open(out_fname, 'w') as f:
-        for read in ([reads] if isinstance(reads, FastaRecord) else reads):
-            seq = (read.seq if width < 0
-                   else '\n'.join(split_seq(read.seq, width)))
-            f.write(f">{read.name}\n{seq}\n")
-    n_seq = len(reads) if hasattr(reads, '__len__') else 1
+        for seq in ([seqs] if isinstance(seqs, FastaRecord) else seqs):
+            _seq = (seq.seq if width < 0
+                   else '\n'.join(split_seq(seq.seq, width)))
+            f.write(f">{seq.name}\n{_seq}\n")
+    n_seq = len(seqs) if hasattr(seqs, '__len__') else 1
     if verbose:
         logger.info(f"{out_fname}: {n_seq} sequences saved")
 
 
-def save_fastq(reads: Union[FastqRecord, Sequence[FastqRecord]],
+def save_fastq(seqs: Union[FastqRecord, Sequence[FastqRecord]],
                out_fname: str,
                verbose: bool = True) -> None:
     with open(out_fname, 'w') as f:
-        for read in ([reads] if isinstance(reads, FastqRecord) else reads):
-            f.write(f"@{read.name}\n{read.seq}\n+\n{read.qual}\n")
-    n_seq = len(reads) if hasattr(reads, '__len__') else 1
+        for seq in ([seqs] if isinstance(seqs, FastqRecord) else seqs):
+            f.write(f"@{seq.name}\n{seq.seq}\n+\n{seq.qual}\n")
+    n_seq = len(seqs) if hasattr(seqs, '__len__') else 1
     if verbose:
         logger.info(f"{out_fname}: {n_seq} sequences saved")

@@ -1,7 +1,23 @@
 from ._align import EdlibAlignment, EdlibRunner
 from ._cigar import Cigar, FlattenCigar
+from ._dazz import db_to_n_blocks, db_to_n_reads, fasta_to_db, load_db, load_db_track
 from ._dotplot import DotPlot
-from ._type import ExplicitRepr, SeqRecord, FastaRecord, FastqRecord, DazzRecord, SeqInterval
 from ._io import load_fasta, load_fastq, save_fasta, save_fastq
-from ._dazz import fasta_to_db, load_db, load_db_track, db_to_n_blocks, db_to_n_reads
-from ._util import split_seq, reverse_seq, revcomp_seq, compress_homopolymer, ascii_to_phred, phred_to_log10_p_error, phred_to_log10_p_correct
+from ._stats import SeqStats, calc_nx, calc_seq_stats, load_seq_stats
+from ._type import (
+    DazzRecord,
+    ExplicitRepr,
+    FastaRecord,
+    FastqRecord,
+    SeqInterval,
+    SeqRecord,
+)
+from ._util import (
+    ascii_to_phred,
+    compress_homopolymer,
+    phred_to_log10_p_correct,
+    phred_to_log10_p_error,
+    revcomp_seq,
+    reverse_seq,
+    split_seq,
+)
