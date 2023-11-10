@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from os.path import isfile
-from typing import List, Optional
+from typing import List, Optional, Sequence, Union
 
 import bits.util as bu
+
+from ._type import SeqRecord
 
 
 @dataclass
@@ -43,24 +45,68 @@ def calc_seq_stats(in_fastx: str, force: bool = False) -> List[SeqStats]:
     return load_seq_stats(out_stats)
 
 
-def calc_nx(in_fastx: str, G: Optional[int] = None) -> List[int]:
+def calc_lens(data: Union[str, Sequence[Union[SeqRecord, str, int]]]) -> List[int]:
+    """Utility function for obtaining sequence lengths.
+
+    Parameters
+    ----------
+    data
+        Input data. Must be one of the followings:
+            1) fasta/q file name
+            2) list of sequence objects
+            3) list of sequences
+            4) list of sequence lengths
+
+    Returns
+    -------
+        List of sequence lengths.
+    """
+    lens = None
+    if isinstance(data, str):  # Fastx file
+        in_fastx = data
+        lens = list(
+            map(
+                int,
+                bu.run_command(f"seqkit fx2tab -nl {in_fastx} | cut -f2")
+                .strip()
+                .split("\n"),
+            )
+        )
+    elif isinstance(data, Sequence):
+        if isinstance(data[0], SeqRecord):  # list of sequence objects
+            seqs = data
+            lens = [seq.length for seq in seqs]
+        elif isinstance(data[0], str):  # list of sequences
+            seqs = data
+            lens = [len(seq) for seq in seqs]
+        elif isinstance(data[0], int):  # list of sequence lengths
+            lens = data
+    assert lens is not None, "Failed to guess the type of input data"
+    return lens
+
+
+def calc_nx(
+    data: Union[str, Sequence[Union[SeqRecord, str, int]]],
+    G: Optional[int] = None,
+) -> List[int]:
     """Calaulate Nx (or NGx if G is given) values from a fasta file.
 
-    Args:
-        in_fastx (str): Input fasta file.
-        G (Optional[int], optional): Genome size. Defaults to None.
+    Parameters
+    ----------
+    data
+        Input data. Must be one of the followings:
+            1) fasta/q file name
+            2) list of sequence objects
+            3) list of sequences
+            4) list of sequence lengths
+    G, optional
+        Genome size, by default None
 
-    Returns:
-        List[int]: Nx/NGx values.
+    Returns
+    -------
+        Nx/NGx values.
     """
-    lens = list(
-        map(
-            int,
-            bu.run_command(f"seqkit fx2tab -nl {in_fastx} | cut -f2")
-            .strip()
-            .split("\n"),
-        )
-    )
+    lens = calc_lens(data)
     if G is None:
         G = sum(lens)
     thres = [G * x / 100 for x in range(100 + 1)]
