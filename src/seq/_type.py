@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Sequence, Tuple, List, Dict
+from typing import Dict, List, Optional, Sequence, Tuple
+
 import numpy as np
+
 from ._util import ascii_to_phred
 
 
@@ -16,18 +18,18 @@ class ExplicitRepr(ABC):
     """
 
     def _order_repr(self, var_names: List[str]) -> str:
-        var_reprs = ', '.join(map(lambda x: f"{x}={repr(getattr(self, x))}",
-                                  var_names))
+        var_reprs = ", ".join(map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
         return f"{self.__class__.__name__}({var_reprs})"
 
     @abstractmethod
     def __repr__(self) -> str:
-        return self._order_repr(["seq"])   # NOTE: This is an example
+        return self._order_repr(["seq"])  # NOTE: This is an example
 
 
 @dataclass
 class SeqRecord(ExplicitRepr):
     """Abstract class for sequence object."""
+
     seq: str
 
     @property
@@ -38,6 +40,7 @@ class SeqRecord(ExplicitRepr):
 @dataclass
 class FastaRecord(SeqRecord):
     """Sequence with name."""
+
     name: str
 
     def __repr__(self) -> str:
@@ -47,6 +50,7 @@ class FastaRecord(SeqRecord):
 @dataclass
 class FastqRecord(FastaRecord):
     """Sequence with name and base qualities."""
+
     qual: str
 
     def __repr__(self) -> str:
@@ -54,13 +58,13 @@ class FastqRecord(FastaRecord):
 
     @property
     def qual_phred(self) -> np.ndarray:
-        return np.array(list(map(ascii_to_phred, self.qual)),
-                        dtype=np.int8)
+        return np.array(list(map(ascii_to_phred, self.qual)), dtype=np.int8)
 
 
 @dataclass
 class DazzRecord(FastaRecord):
     """Sequence with name and DAZZ_DB ID."""
+
     id: int
 
     def __repr__(self) -> str:
@@ -70,9 +74,27 @@ class DazzRecord(FastaRecord):
 @dataclass
 class SeqInterval:
     """Class for an interval on a sequence."""
+
     start: int
     end: int
 
     @property
     def length(self) -> int:
         return self.end - self.start
+
+
+@dataclass
+class BedRecord:
+    """Class for a record of a .bed file.
+    0-indexed, [b, e)
+    """
+
+    chr: str
+    b: int
+    e: int
+    name: Optional[str]
+    attr: List[str]
+
+    @property
+    def length(self) -> int:
+        return self.e - self.b
