@@ -1,7 +1,8 @@
 from os.path import join, splitext
 from dataclasses import dataclass, field, InitVar
 from typing import Type, Union, Optional, List, Tuple
-from ..util import run_command, show_image
+from ..util import run_command
+from plotly_light import show_image
 from ._io import FastaRecord, save_fasta
 
 
