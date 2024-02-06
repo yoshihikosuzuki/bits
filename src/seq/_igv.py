@@ -33,11 +33,12 @@ class IGVbrowser:
         else:
             self.add_genome(ref_fname_or_genome_name, region)
 
-    def add_genome_from_fasta(self,
-                              ref_fname: str,
-                              ref_id: Optional[str] = None,
-                              ref_name: Optional[str] = None,
-                              region: Optional[str] = None):
+    def add_genome_from_fasta(
+            self,
+            ref_fname: str,
+            ref_id: Optional[str] = None,
+            ref_name: Optional[str] = None,
+            region: Optional[str] = None):
         if ref_id is not None and ref_name is None:
             ref_name = ref_id
         elif ref_id is None and ref_name is not None:
@@ -55,57 +56,96 @@ class IGVbrowser:
         })
         return self
 
-    def add_genome(self, genome_name: str, region: Optional[str] = None):
+    def add_genome(
+            self,
+            genome_name: str,
+            region: Optional[str] = None):
+        """`genome_name` is e.g. 'hg38'"""
         self.b = igv_notebook.Browser({
             'genome': genome_name,
             'locus': region
         })
         return self
 
-    def add_bam(self, bam_fname: str, track_name: str):
+    def add_bam(
+            self,
+            bam_fname: str,
+            name: Optional[str] = "bam",
+            height: Optional[int] = 300,
+            auto_height: bool = True):
         self.b.load_track({
-            'name': track_name,
+            'name': name,
             'path': bam_fname,
             'indexPath': f'{bam_fname}.bai',
             'format': 'bam',
-            'type': 'alignment'
+            'type': 'alignment',
+            'height': height,
+            'autoHeight': auto_height
         })
         return self
 
-    def add_vcfgz(self, vcfgz_fname: str, track_name: str):
+    def add_vcfgz(
+            self,
+            vcfgz_fname: str,
+            name: Optional[str] = "vcf",
+            height: Optional[int] = 50,
+            auto_height: bool = True):
         self.b.load_track({
-            'name': track_name,
+            'name': name,
             'path': vcfgz_fname,
             'indexPath': f'{vcfgz_fname}.tbi',
             'format': 'vcf',
-            'type': 'variant'
+            'type': 'variant',
+            'height': height,
+            'autoHeight': auto_height
         })
         return self
 
-    def add_gff3gz(self, gff3gz_fname: str, track_name: str):
+    def add_gff3gz(
+            self,
+            gff3gz_fname: str,
+            name: Optional[str] = "gff",
+            height: Optional[int] = 50,
+            auto_height: bool = True):
         self.b.load_track({
-            'name': track_name,
+            'name': name,
             'path': gff3gz_fname,
             'indexPath': f'{gff3gz_fname}.tbi',
             'format': 'gff3',
-            'type': 'annotation'
+            'type': 'annotation',
+            'height': height,
+            'autoHeight': auto_height
         })
         return self
 
-    def add_bed(self, bed_fname: str, track_name: str):
+    def add_bed(
+            self,
+            bed_fname: str,
+            name: Optional[str] = "bed",
+            height: Optional[int] = 50,
+            auto_height: bool = True):
         self.b.load_track({
-            'name': track_name,
+            'name': name,
             'path': bed_fname,
             'format': 'bed',
-            'type': 'annotation'
+            'type': 'annotation',
+            'height': height,
+            'autoHeight': auto_height
         })
         return self
 
-    def add_wig(self, wig_fname: str, track_name: str):
+    def add_wig(
+            self,
+            wig_fname: str,
+            name: Optional[str] = "annot",
+            height: Optional[int] = 50,
+            auto_height: bool = True):
         """wig, bigwig, bedgraph are accepted."""
         self.b.load_track({
-            'name': track_name,
+            'name': name,
             'path': wig_fname,
-            'type': 'wig'
+            'type': 'wig',
+            'height': height,
+            'autoHeight': auto_height
         })
         return self
