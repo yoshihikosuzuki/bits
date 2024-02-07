@@ -18,7 +18,8 @@ class ExplicitRepr(ABC):
     """
 
     def _order_repr(self, var_names: List[str]) -> str:
-        var_reprs = ", ".join(map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
+        var_reprs = ", ".join(
+            map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
         return f"{self.__class__.__name__}({var_reprs})"
 
     @abstractmethod
@@ -75,26 +76,39 @@ class DazzRecord(FastaRecord):
 class SeqInterval:
     """Class for an interval on a sequence."""
 
-    start: int
-    end: int
-
-    @property
-    def length(self) -> int:
-        return self.end - self.start
-
-
-@dataclass
-class BedRecord:
-    """Class for a record of a .bed file.
-    0-indexed, [b, e)
-    """
-
-    chr: str
     b: int
     e: int
-    name: Optional[str]
-    attr: List[str]
 
     @property
     def length(self) -> int:
         return self.e - self.b
+
+
+@dataclass
+class BedRecord(ExplicitRepr):
+    """Class for an interval on a chromosomal sequence."""
+
+    chr: str
+    b: int
+    e: int
+
+    def __repr__(self) -> str:
+        return self._order_repr(list(vars(self).keys()))
+
+    @property
+    def length(self) -> int:
+        return self.e - self.b
+
+
+@dataclass
+class SatRecord(BedRecord):
+    unit_seq: str
+    n_copy: float
+
+    @property
+    def array_len(self):
+        return self.e - self.b
+
+    @property
+    def unit_len(self):
+        return len(self.unit_seq)

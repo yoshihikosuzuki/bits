@@ -1,10 +1,10 @@
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Type, Union
 
 from logzero import logger
 from pyfastx import Fasta, Fastq
 
 from ..util._proc import run_command
-from ._type import BedRecord, FastaRecord, FastqRecord
+from ._type import BedRecord, FastaRecord, FastqRecord, SatRecord
 from ._util import split_seq
 
 
@@ -69,7 +69,8 @@ def load_fasta(
         out = run_command(command).strip().split("\n")
         assert len(out) % 2 == 0
         seqs = [
-            FastaRecord(name=out[i * 2][1:], seq=_change_case(out[i * 2 + 1], case))
+            FastaRecord(name=out[i * 2][1:],
+                        seq=_change_case(out[i * 2 + 1], case))
             for i in range(len(out) // 2)
         ]
     if verbose:
@@ -128,7 +129,8 @@ def save_fasta(
     assert width != 0, "`width` must not be 0"
     with open(out_fname, "w") as f:
         for seq in [seqs] if isinstance(seqs, FastaRecord) else seqs:
-            _seq = seq.seq if width < 0 else "\n".join(split_seq(seq.seq, width))
+            _seq = seq.seq if width < 0 else "\n".join(
+                split_seq(seq.seq, width))
             f.write(f">{seq.name}\n{_seq}\n")
     n_seq = len(seqs) if hasattr(seqs, "__len__") else 1
     if verbose:
@@ -148,7 +150,12 @@ def save_fastq(
         logger.info(f"{out_fname}: {n_seq} sequences saved")
 
 
-def load_bed(in_fname: str, verbose: bool = True):
+def load_bed(
+    in_fname: str,
+    attr_names: List[str] = [],
+    attr_types: List[Type] = [],
+    verbose: bool = True
+) -> List[BedRecord]:
     records = []
     with open(in_fname, "r") as f:
         for line in f:
@@ -157,15 +164,32 @@ def load_bed(in_fname: str, verbose: bool = True):
             data = line.strip().split("\t")
             if len(data) < 3:
                 continue
-            records.append(
-                BedRecord(
-                    chr=data[0],
-                    b=int(data[1]),
-                    e=int(data[2]),
-                    name=data[3] if len(data) > 3 else None,
-                    attr=data[4:],
-                )
-            )
+            assert len(attr_names) == len(attr_types)
+            assert len(attr_names) == len(data) - 3, "Invalid # of attributes"
+            r = BedRecord(chr=data[0],
+                          b=int(data[1]),
+                          e=int(data[2]))
+            for attr_name, attr_type, value in zip(attr_names, attr_types, data[3:]):
+                r.__setattr__(attr_name, attr_type(value))
+            records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
     return records
+
+
+def load_trf(in_trf) -> List[SatRecord]:
+    sats = []
+    with open(in_trf, 'r') as f:
+        for line in f:
+            if line.startswith('@'):
+                c = line.strip()[1:]
+                continue
+            data = line.strip().split()
+            b = int(data[0])
+            e = int(data[1])
+            n_copy = float(data[3])
+            unit_seq = data[13]
+            sat = SatRecord(c, b, e, unit_seq, n_copy)
+            sats.append(sat)
+    logger.info(f"{in_trf}: {len(sats)} records loaded")
+    return sats

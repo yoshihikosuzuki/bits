@@ -1,9 +1,11 @@
 from os.path import splitext
-from typing import Union, Optional, Tuple, List, Dict
+from typing import Dict, List, Optional, Tuple, Union
+
 from logzero import logger
+
 from ..util import run_command
-from ._type import DazzRecord, SeqInterval
 from ._io import _change_case
+from ._type import DazzRecord, SeqInterval
 
 
 def fasta_to_db(fasta_fname: str,
@@ -81,8 +83,8 @@ def load_db_track(db_fname: str,
         elif line.startswith('T0'):
             poss = list(map(int, line.split()[2:]))
             assert len(poss) % 2 == 0, f"Cannot find pair of positions: {line}"
-            tracks[int(read_id)] = [SeqInterval(start, end)
-                                    for start, end in zip(poss[::2], poss[1::2])]
+            tracks[int(read_id)] = [SeqInterval(b, e)
+                                    for b, e in zip(poss[::2], poss[1::2])]
             count += len(poss) // 2
     if verbose:
         logger.info(f"{db_fname} ({track_name}): "
