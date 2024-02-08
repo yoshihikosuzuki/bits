@@ -17,6 +17,7 @@ from ._type import (
 )
 from ._util import (
     ascii_to_phred,
+    calc_hp_ds_ts,
     compress_homopolymer,
     phred_to_log10_p_correct,
     phred_to_log10_p_error,

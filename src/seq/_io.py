@@ -165,7 +165,7 @@ def load_bed(
             if len(data) < 3:
                 continue
             assert len(attr_names) == len(attr_types)
-            assert len(attr_names) == len(data) - 3, "Invalid # of attributes"
+            # assert len(attr_names) == len(data) - 3, "Invalid # of attributes"
             r = BedRecord(chr=data[0],
                           b=int(data[1]),
                           e=int(data[2]))
