@@ -177,7 +177,10 @@ def load_bed(
     return records
 
 
-def load_trf(in_trf) -> List[SatRecord]:
+def load_trf(
+    in_trf: str,
+    verbose: bool = True
+) -> List[SatRecord]:
     sats = []
     with open(in_trf, 'r') as f:
         for line in f:
@@ -191,5 +194,6 @@ def load_trf(in_trf) -> List[SatRecord]:
             unit_seq = data[13]
             sat = SatRecord(c, b, e, unit_seq, n_copy)
             sats.append(sat)
-    logger.info(f"{in_trf}: {len(sats)} records loaded")
+    if verbose:
+        logger.info(f"{in_trf}: {len(sats)} records loaded")
     return sats

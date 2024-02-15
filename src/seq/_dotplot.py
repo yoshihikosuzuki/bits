@@ -1,8 +1,10 @@
+from dataclasses import InitVar, dataclass, field
 from os.path import join, splitext
-from dataclasses import dataclass, field, InitVar
-from typing import Type, Union, Optional, List, Tuple
-from ..util import run_command
+from typing import List, Optional, Tuple, Type, Union
+
 from plotly_light import show_image
+
+from ..util import run_command
 from ._io import FastaRecord, save_fasta
 
 
@@ -50,8 +52,9 @@ class DotPlot:
              b_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
              out_fname: Optional[str] = None,
              word_size: int = 10,
-             fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 750,
-             plot_size: int = 11):
+             fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 1000,
+             plot_size: int = 500,
+             interactive_plot: bool = False):
         """Draw a dot plot between two sequences.
 
         positional arguments:
@@ -61,7 +64,7 @@ class DotPlot:
           @ out_fname  : Output file name of the dot plot.
           @ word_size  : Word size for Gepard.
           @ fig_size   : Size of the png file of the dot plot (in pixel).
-          @ plot_size  : Display size of the plot image (in inch).
+          @ plot_size  : Display size of the plot image (in pixel).
         """
         def _prep(seqs: str, prolog: str):
             if isinstance(seqs, str) and splitext(seqs)[1] == ".fasta":   # fasta file name
@@ -90,4 +93,7 @@ class DotPlot:
                               f"-maxheight {fig_size}",
                               f"-word {word_size}",
                               f"-outfile {out_fname}"]))
-        show_image(out_fname, plot_size)
+        show_image(out_fname,
+                   interactive=interactive_plot,
+                   width=plot_size,
+                   height=plot_size)
