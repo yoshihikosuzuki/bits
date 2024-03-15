@@ -1,13 +1,13 @@
-import sys
 import subprocess as sp
+import sys
 from multiprocessing import Process
+from multiprocessing.context import DefaultContext
 from multiprocessing.pool import Pool
+
 from logzero import logger
 
 
-def run_command(command: str,
-                err_msg: str = "",
-                exit_on_error: bool = True) -> str:
+def run_command(command: str, err_msg: str = "", exit_on_error: bool = True) -> str:
     """General-purpose shell command runner.
 
     positional arguments:
@@ -29,6 +29,18 @@ def run_command(command: str,
         return out.decode("utf-8")
 
 
+class NoDaemonPool(Pool):
+    """Custom Pool that can have child processes."""
+
+    def get_context(self):
+        return NoDaemonContext()
+
+
+class NoDaemonContext(DefaultContext):
+    def Process(self, *args, **kwargs):
+        return NoDaemonProcess(*args, **kwargs)
+
+
 class NoDaemonProcess(Process):
     def _get_daemon(self):
         return False
@@ -37,8 +49,3 @@ class NoDaemonProcess(Process):
         pass
 
     daemon = property(_get_daemon, _set_daemon)
-
-
-class NoDaemonPool(Pool):
-    """Custom Pool that can have child processes."""
-    Process = NoDaemonProcess
