@@ -69,8 +69,7 @@ def load_fasta(
         out = run_command(command).strip().split("\n")
         assert len(out) % 2 == 0
         seqs = [
-            FastaRecord(name=out[i * 2][1:],
-                        seq=_change_case(out[i * 2 + 1], case))
+            FastaRecord(name=out[i * 2][1:], seq=_change_case(out[i * 2 + 1], case))
             for i in range(len(out) // 2)
         ]
     if verbose:
@@ -129,8 +128,7 @@ def save_fasta(
     assert width != 0, "`width` must not be 0"
     with open(out_fname, "w") as f:
         for seq in [seqs] if isinstance(seqs, FastaRecord) else seqs:
-            _seq = seq.seq if width < 0 else "\n".join(
-                split_seq(seq.seq, width))
+            _seq = seq.seq if width < 0 else "\n".join(split_seq(seq.seq, width))
             f.write(f">{seq.name}\n{_seq}\n")
     n_seq = len(seqs) if hasattr(seqs, "__len__") else 1
     if verbose:
@@ -152,10 +150,24 @@ def save_fastq(
 
 def load_bed(
     in_fname: str,
-    attr_names: List[str] = [],
-    attr_types: List[Type] = [],
-    verbose: bool = True
+    attrs: List[Tuple[str, Type]] = [],
+    verbose: bool = True,
 ) -> List[BedRecord]:
+    """Load a bed file.
+
+    Parameters
+    ----------
+    in_fname
+        Input file name of a bed file
+    attrs, optional
+        A list of tuples of (attr_name, attr_type) for attributes after 4th column, by default []
+    verbose, optional
+        verbose mode, by default True
+
+    Returns
+    -------
+        A list of records in the bed file
+    """
     records = []
     with open(in_fname, "r") as f:
         for line in f:
@@ -163,13 +175,11 @@ def load_bed(
                 continue
             data = line.strip().split("\t")
             if len(data) < 3:
+                if verbose:
+                    logger.warn(f"Ignoring record: {line.strip()}")
                 continue
-            assert len(attr_names) == len(attr_types)
-            # assert len(attr_names) == len(data) - 3, "Invalid # of attributes"
-            r = BedRecord(chr=data[0],
-                          b=int(data[1]),
-                          e=int(data[2]))
-            for attr_name, attr_type, value in zip(attr_names, attr_types, data[3:]):
+            r = BedRecord(chr=data[0], b=int(data[1]), e=int(data[2]))
+            for (attr_name, attr_type), value in zip(attrs, data[3:]):
                 r.__setattr__(attr_name, attr_type(value))
             records.append(r)
     if verbose:
@@ -177,14 +187,11 @@ def load_bed(
     return records
 
 
-def load_trf(
-    in_trf: str,
-    verbose: bool = True
-) -> List[SatRecord]:
+def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
     sats = []
-    with open(in_trf, 'r') as f:
+    with open(in_trf, "r") as f:
         for line in f:
-            if line.startswith('@'):
+            if line.startswith("@"):
                 c = line.strip()[1:]
                 continue
             data = line.strip().split()
