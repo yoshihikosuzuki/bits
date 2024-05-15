@@ -25,3 +25,4 @@ from ._util import (
     reverse_seq,
     split_seq,
 )
+from ._viz_pileup import show_read_pileup
