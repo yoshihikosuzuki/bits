@@ -2,6 +2,8 @@ from typing import List
 
 import numpy as np
 
+from ._type import BedRecord
+
 
 def findall(seq: str, query: str) -> List[int]:
     """List up all the positions of `query` in `seq`."""
@@ -12,14 +14,14 @@ def findall(seq: str, query: str) -> List[int]:
         if i == -1:
             break
         pos.append(offset + i)
-        seq = seq[i + 1:]
+        seq = seq[i + 1 :]
         offset += i + 1
     return pos
 
 
 def split_seq(seq: str, width: int) -> List[str]:
     """Split `seq` at every `width` characters."""
-    return [seq[i:i + width] for i in range(0, len(seq), width)]
+    return [seq[i : i + width] for i in range(0, len(seq), width)]
 
 
 def reverse_seq(seq: str) -> str:
@@ -30,11 +32,11 @@ F_TO_RC = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 
 def revcomp_seq(seq: str) -> str:
-    return ''.join([F_TO_RC[c] for c in seq[::-1]])
+    return "".join([F_TO_RC[c] for c in seq[::-1]])
 
 
 def compress_homopolymer(seq: str) -> str:
-    comp_seq, prev_base = "", ''
+    comp_seq, prev_base = "", ""
     for base in seq:
         if base != prev_base:
             comp_seq += base
@@ -42,7 +44,9 @@ def compress_homopolymer(seq: str) -> str:
     return comp_seq
 
 
-def calc_hp_ds_ts(seq: str, rev: bool = False, return_nbase: bool = False, fill: bool = False):
+def calc_hp_ds_ts(
+    seq: str, rev: bool = False, return_nbase: bool = False, fill: bool = False
+):
     """For each position of `seq`, calcualte the lengths of homopolymers,
     dinucleotide satellites, and trinucleotide satellites at the position.
 
@@ -69,18 +73,19 @@ def calc_hp_ds_ts(seq: str, rev: bool = False, return_nbase: bool = False, fill:
             else:
                 ds_lens[i] = 1
                 if i >= 3:
-                    if seq[i - 3:i - 1] == seq[i - 1:i + 1]:
+                    if seq[i - 3 : i - 1] == seq[i - 1 : i + 1]:
                         ds_lens[i] = ds_lens[i - 2] + 1
         if i >= 2:
             if seq[i - 2] == seq[i - 1] == seq[i]:
                 continue
             ts_lens[i] = 1
             if i >= 5:
-                if seq[i - 5:i - 2] == seq[i - 2:i + 1]:
+                if seq[i - 5 : i - 2] == seq[i - 2 : i + 1]:
                     ts_lens[i] = ts_lens[i - 3] + 1
     if rev:
-        hp_lens, ds_lens, ts_lens = map(lambda x: list(reversed(x)),
-                                        (hp_lens, ds_lens, ts_lens))
+        hp_lens, ds_lens, ts_lens = map(
+            lambda x: list(reversed(x)), (hp_lens, ds_lens, ts_lens)
+        )
     return (hp_lens, ds_lens, ts_lens)
 
 
@@ -96,12 +101,20 @@ def phred_to_log10_p_error(phred: int) -> float:
     return -phred / 10
 
 
-PHRED_TO_LOG_CORRECT = [-np.inf if phred == 0
-                        else np.log10(1 - np.power(10, -phred / 10))
-                        for phred in range(94)]
+PHRED_TO_LOG_CORRECT = [
+    -np.inf if phred == 0 else np.log10(1 - np.power(10, -phred / 10))
+    for phred in range(94)
+]
 
 
 def phred_to_log10_p_correct(phred: int) -> float:
     """Convert Phred score into log10(Pr{base is correct})."""
     assert 0 <= phred <= 93, "`phred` must be in a range of [0..93]"
     return PHRED_TO_LOG_CORRECT[phred]
+
+
+def parse_region(region: str) -> BedRecord:
+    """Convert e.g. `chr:1000-2000` into a BedRecord object."""
+    chrom, b_e = region.split(":")
+    b, e = b_e.split("-")
+    return BedRecord(chr=chrom, b=int(b), e=int(e))

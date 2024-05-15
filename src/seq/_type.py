@@ -4,8 +4,6 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from ._util import ascii_to_phred
-
 
 class ExplicitRepr(ABC):
     """An abstract class where the order of variables displayed in the repr()
@@ -18,8 +16,7 @@ class ExplicitRepr(ABC):
     """
 
     def _order_repr(self, var_names: List[str]) -> str:
-        var_reprs = ", ".join(
-            map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
+        var_reprs = ", ".join(map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
         return f"{self.__class__.__name__}({var_reprs})"
 
     @abstractmethod
@@ -59,7 +56,7 @@ class FastqRecord(FastaRecord):
 
     @property
     def qual_phred(self) -> np.ndarray:
-        return np.array(list(map(ascii_to_phred, self.qual)), dtype=np.int8)
+        return np.array(list(map(lambda c: ord(c) - 33, self.qual)), dtype=np.int8)
 
 
 @dataclass

@@ -1,11 +1,12 @@
 from typing import List, Optional, Sequence, Tuple, Type, Union
 
+import pysam
 from logzero import logger
 from pyfastx import Fasta, Fastq
 
 from ..util._proc import run_command
 from ._type import BedRecord, FastaRecord, FastqRecord, SatRecord
-from ._util import split_seq
+from ._util import parse_region, split_seq
 
 
 def _change_case(seq: str, case: str) -> str:
@@ -204,3 +205,8 @@ def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
     if verbose:
         logger.info(f"{in_trf}: {len(sats)} records loaded")
     return sats
+
+
+def load_bam(in_bam: str, region: Union[str, BedRecord]) -> List[pysam.AlignedSegment]:
+    r = parse_region(region) if isinstance(region, str) else region
+    return list(pysam.AlignmentFile(in_bam, "rb").fetch(r.chr, r.b, r.e))
