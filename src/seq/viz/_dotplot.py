@@ -2,10 +2,10 @@ from dataclasses import InitVar, dataclass, field
 from os.path import join, splitext
 from typing import List, Optional, Tuple, Type, Union
 
+from bits.util import run_command
 from plotly_light import show_image
 
-from ..util import run_command
-from ._io import FastaRecord, save_fasta
+from .._io import FastaRecord, save_fasta
 
 
 @dataclass(repr=False, eq=False)
@@ -107,6 +107,7 @@ class DotPlot:
 
         a_fasta = _prep(a_seqs, "a")
         b_fasta = _prep(b_seqs, "b")
+
         if out_fname is None:
             out_fname = f"{self.tmp_dir}/dotplot.png"
 

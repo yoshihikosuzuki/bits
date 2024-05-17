@@ -1,5 +1,3 @@
-# NOTE: Visualization for whole genome annotation data
-
 import plotly_light as pl
 
 

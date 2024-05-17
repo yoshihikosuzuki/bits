@@ -1,5 +1,3 @@
-# NOTE: Visualization for per-chromosome annotation data
-
 import plotly_light as pl
 
 

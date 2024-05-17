@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple, Union
 import plotly.graph_objects as go
 import plotly_light as pl
 
-from ._io import load_bam
+from .._io import load_bam
 
 
 def align_pileup(read_start_ends: List[Tuple[int, int]], margin=100) -> List[int]:

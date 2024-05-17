@@ -1,8 +1,6 @@
 from ._align import EdlibAlignment, EdlibRunner
 from ._cigar import Cigar, FlattenCigar
 from ._dazz import db_to_n_blocks, db_to_n_reads, fasta_to_db, load_db, load_db_track
-from ._dotplot import DotPlot
-from ._igv import IGVbrowser
 from ._io import (
     load_bam,
     load_bed,
@@ -34,4 +32,4 @@ from ._util import (
     reverse_seq,
     split_seq,
 )
-from ._viz_pileup import show_read_pileup
+from .viz import *
