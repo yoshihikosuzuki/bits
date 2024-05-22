@@ -2,7 +2,9 @@ from dataclasses import InitVar, dataclass, field
 from os.path import join, splitext
 from typing import List, Optional, Tuple, Type, Union
 
+import plotly.graph_objects as go
 from bits.util import run_command
+from logzero import logger
 from plotly_light import show_image
 
 from .._io import FastaRecord, save_fasta
@@ -63,12 +65,15 @@ class DotPlot:
         self,
         a_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
         b_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
-        out_fname: Optional[str] = None,
+        a_range: Optional[Tuple[int, int]] = None,
+        b_range: Optional[Tuple[int, int]] = None,
         word_size: int = 10,
         only_plot: bool = False,
         fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 1000,
         plot_size: int = 500,
-        interactive_plot: bool = False,
+        layout: go.Layout = None,
+        out_fname: Optional[str] = None,
+        static: bool = False,
     ):
         """Draw a dot plot between two sequences.
 
@@ -76,11 +81,11 @@ class DotPlot:
           @ [a|b]_seq : Sequence, FastaRecord, or fasta file name.
 
         optional arguments:
-          @ out_fname  : Output file name of the dot plot.
           @ word_size  : Word size for Gepard.
           @ only_plot  : Show only the plot and not texts and margins.
           @ fig_size   : Size of the png file of the dot plot (in pixel).
           @ plot_size  : Display size of the plot image (in pixel).
+          @ out_fname  : Output file name of the dot plot.
         """
 
         def _prep(seqs: str, prolog: str):
@@ -126,6 +131,17 @@ class DotPlot:
                 ]
             )
         )
+
+        if not only_plot and (a_range is not None or b_range is not None):
+            logger.info("`[a|b]_range` is ignored (used only when `only_plot`)")
+            a_range, b_range = None, None
+
         show_image(
-            out_fname, interactive=interactive_plot, width=plot_size, height=plot_size
+            out_fname,
+            static=static,
+            width=plot_size,
+            height=plot_size,
+            x_range=a_range,
+            y_range=b_range,
+            layout=layout,
         )
