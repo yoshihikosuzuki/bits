@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence, Union
 
 import numpy as np
 
@@ -17,6 +17,26 @@ def findall(seq: str, query: str) -> List[int]:
         seq = seq[i + 1 :]
         offset += i + 1
     return pos
+
+
+def split_at(
+    seq: str,
+    pos: Union[int, Sequence[int]],
+    b: int = 0,
+) -> List[str]:
+    """Split a single string into a list of strings divided at specified position(s).
+
+    @ seq
+        Input string.
+    @ pos
+        Position(s) where `seq` is divided.
+    @ b
+        Use this option when `seq = _seq[b:b+len(seq)]` and `pos` is between `b` and `b+len(seq)`.
+    """
+    if isinstance(pos, int):
+        pos = [pos]
+    pos = [0] + [p - b for p in pos] + [len(seq)]
+    return [seq[pos[i] : pos[i + 1]] for i in range(len(pos) - 1)]
 
 
 def split_seq(seq: str, width: int) -> List[str]:

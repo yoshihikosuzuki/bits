@@ -1,13 +1,12 @@
 from dataclasses import InitVar, dataclass, field
-from os.path import join, splitext
+from os.path import basename, join, splitext
 from typing import List, Optional, Tuple, Type, Union
 
 import plotly.graph_objects as go
+import plotly_light as pl
 from bits.util import run_command
-from logzero import logger
-from plotly_light import show_image
 
-from .._io import FastaRecord, save_fasta
+from .._io import FastaRecord, load_fasta, save_fasta
 
 
 @dataclass(repr=False, eq=False)
@@ -65,14 +64,16 @@ class DotPlot:
         self,
         a_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
         b_seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
+        a_name: Optional[str] = None,
+        b_name: Optional[str] = None,
         a_range: Optional[Tuple[int, int]] = None,
         b_range: Optional[Tuple[int, int]] = None,
         word_size: int = 10,
-        only_plot: bool = False,
         fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 1000,
         plot_size: int = 500,
         layout: go.Layout = None,
         out_fname: Optional[str] = None,
+        original_plot: bool = False,
         static: bool = False,
     ):
         """Draw a dot plot between two sequences.
@@ -82,36 +83,58 @@ class DotPlot:
 
         optional arguments:
           @ word_size  : Word size for Gepard.
-          @ only_plot  : Show only the plot and not texts and margins.
           @ fig_size   : Size of the png file of the dot plot (in pixel).
           @ plot_size  : Display size of the plot image (in pixel).
           @ out_fname  : Output file name of the dot plot.
+          @ original_plot  : Show the original plot of Gepard.
+          @ static     : Show the plot as a static image.
         """
 
         def _prep(seqs: str, prolog: str):
-            if (
-                isinstance(seqs, str) and splitext(seqs)[1] == ".fasta"
-            ):  # fasta file name
-                return seqs
+            # fasta file name
+            if isinstance(seqs, str) and splitext(seqs)[1] in (
+                ".fasta",
+                ".fa",
+            ):
+                return seqs, basename(seqs)
 
-            out_fasta = join(self.tmp_dir, f"{prolog}.fasta")
-            if not isinstance(seqs, list):
+            name = prolog
+            if not isinstance(seqs, list):  # single sequence
+                if isinstance(seqs, FastaRecord):
+                    name = seqs.name
                 seqs = [seqs]
-            save_fasta(
-                [
-                    (
-                        seq
-                        if isinstance(seq, FastaRecord)
-                        else FastaRecord(name=f"{prolog}/{i}/0_{len(seq)}", seq=seq)
+            out_seqs = []
+            for i, seq in enumerate(seqs):
+                if isinstance(seq, FastaRecord):
+                    out_seqs.append(seq)
+                else:
+                    out_seqs.append(
+                        FastaRecord(name=f"{prolog}/{i}/0_{len(seq)}", seq=seq)
                     )
-                    for i, seq in enumerate(seqs)
-                ],
-                out_fasta,
-            )
-            return out_fasta
+            out_fasta = join(self.tmp_dir, f"{prolog}.fasta")
+            save_fasta(out_seqs, out_fasta, verbose=False)
+            return out_fasta, name
 
-        a_fasta = _prep(a_seqs, "a")
-        b_fasta = _prep(b_seqs, "b")
+        a_fasta, a_title = _prep(a_seqs, "a")
+        b_fasta, b_title = _prep(b_seqs, "b")
+        if a_name is not None:
+            a_title = a_name
+        if b_name is not None:
+            b_title = b_name
+
+        if original_plot:
+            a_range = b_range = None
+        else:
+            if a_range is None:
+                a_range = (
+                    0,
+                    sum([seq.length for seq in load_fasta(a_fasta, verbose=False)]),
+                )
+            if b_range is None:
+                b_range = (
+                    0,
+                    sum([seq.length for seq in load_fasta(b_fasta, verbose=False)]),
+                )
 
         if out_fname is None:
             out_fname = f"{self.tmp_dir}/dotplot.png"
@@ -126,22 +149,18 @@ class DotPlot:
                     f"-maxwidth {fig_size}",
                     f"-maxheight {fig_size}",
                     f"-word {word_size}",
-                    "-onlyplot" if only_plot else "",
+                    "-onlyplot" if not original_plot else "",
                     f"-outfile {out_fname}",
                 ]
             )
         )
 
-        if not only_plot and (a_range is not None or b_range is not None):
-            logger.info("`[a|b]_range` is ignored (used only when `only_plot`)")
-            a_range, b_range = None, None
-
-        show_image(
+        pl.show_image(
             out_fname,
             static=static,
             width=plot_size,
             height=plot_size,
             x_range=a_range,
             y_range=b_range,
-            layout=layout,
+            layout=pl.merge_layout(pl.layout(x_title=a_title, y_title=b_title), layout),
         )
