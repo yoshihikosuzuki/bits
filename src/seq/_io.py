@@ -207,6 +207,11 @@ def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
     return sats
 
 
-def load_bam(in_bam: str, region: Union[str, BedRecord]) -> List[pysam.AlignedSegment]:
+def load_bam(
+    in_bam: str, region: Union[str, BedRecord], require_span: bool = False
+) -> List[pysam.AlignedSegment]:
     r = parse_region(region) if isinstance(region, str) else region
-    return list(pysam.AlignmentFile(in_bam, "rb").fetch(r.chr, r.b, r.e))
+    mappings = list(pysam.AlignmentFile(in_bam, "rb").fetch(r.chr, r.b, r.e))
+    if require_span:
+        mappings = list(filter(lambda m: m.reference_start <= r.b - 1 and m.reference_end >= r.e + 1, mappings))
+    return mappings

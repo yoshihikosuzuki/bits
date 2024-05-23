@@ -6,7 +6,9 @@ import plotly_light as pl
 from .._io import load_bam
 
 
-def align_pileup(read_start_ends: List[Tuple[int, int]], margin=100) -> List[int]:
+def align_pileup(
+    read_start_ends: List[Tuple[int, int]], min_spacing: int = 100
+) -> List[int]:
     """Given a list of (start, end) intervals, calculate the min row ID for each
     interval s.t. each interval does not overlap with other intervals.
 
@@ -26,7 +28,7 @@ def align_pileup(read_start_ends: List[Tuple[int, int]], margin=100) -> List[int
     for read_id, (b, e) in enumerate(read_start_ends):
         read_row = None
         for row_id, max_e in enumerate(row_max_es):
-            if max_e + margin < b:
+            if max_e + min_spacing < b:
                 read_row = row_id
                 break
         if read_row is None:
@@ -41,8 +43,10 @@ def align_pileup(read_start_ends: List[Tuple[int, int]], margin=100) -> List[int
 def show_read_pileup(
     in_bam: str,
     region: str,
+    require_span: bool = False,
     show_suppl: bool = False,
     color_strand: bool = False,
+    min_spacing: int = 100,
     marker_size: int = 2,
     line_width: int = 2,
     line_width_clip: int = 1,
@@ -72,7 +76,7 @@ def show_read_pileup(
         pl.Figure if `return_fig` is True, otherwise None
     """
     ##### Preparing necassary data #####
-    reads = load_bam(in_bam, region)
+    reads = load_bam(in_bam, region, require_span)
     if not show_suppl:
         reads = list(filter(lambda read: read.flag in (0, 16), reads))
 
@@ -84,7 +88,8 @@ def show_read_pileup(
         [
             (read.reference_start - b_clip, read.reference_end + e_clip)
             for read, (b_clip, e_clip) in zip(reads, clip_lens)
-        ]
+        ],
+        min_spacing=min_spacing,
     )
 
     ##### Filter functions for reads #####
