@@ -43,12 +43,12 @@ def show_read_pileup(
     region: str,
     show_suppl: bool = False,
     color_strand: bool = False,
-    color_suppl: bool = False,
     marker_size: int = 2,
     line_width: int = 2,
     width: int = 1000,
     height: int = 400,
     layout: Optional[go.Layout] = None,
+    use_webgl: bool = False,
     return_fig: bool = False,
 ) -> Optional[go.Figure]:
     """Show the read pileup plot given a .bam file.
@@ -63,8 +63,6 @@ def show_read_pileup(
         Show supplementary alignments and secondary alignments as well as primary alignments.
     color_strand
         Use different colors for different strands.
-    color_suppl
-        Use different colors for primary alignments and other alignments.
     return_fig, optional
         Return pl.Figure object instead of drawing a plot, by default False
 
@@ -72,6 +70,7 @@ def show_read_pileup(
     -------
         pl.Figure if `return_fig` is True, otherwise None
     """
+    ##### Preparing necassary data #####
     reads = load_bam(in_bam, region)
     if not show_suppl:
         reads = list(filter(lambda read: read.flag in (0, 16), reads))
@@ -87,11 +86,66 @@ def show_read_pileup(
         ]
     )
 
-    # Hover text
-    traces_text = [
-        pl.scatter(
-            x=x,
-            y=[row_id for row_id in read_rows],
+    ##### Filter functions for reads #####
+    def _filter_by_read(cond_read):
+        return list(
+            zip(*(filter(lambda t: cond_read(t[0]), zip(reads, read_rows, sc_lens))))
+        )
+
+    def _filter_by_flag(
+        is_primary: Optional[bool] = None, is_forward: Optional[bool] = None
+    ):
+        assert is_primary in (None, True, False)
+        assert is_forward in (None, True, False)
+        if is_primary is None and is_forward is None:
+            return reads, read_rows, sc_lens
+        return _filter_by_read(
+            lambda read: (
+                True
+                if is_primary is None
+                else read.flag & 2048 == (0 if is_primary else 2048)
+            )
+            and (
+                True
+                if is_forward is None
+                else read.flag & 16 == (0 if is_forward else 16)
+            )
+        )
+
+    ##### Defining colors #####
+    ## Colors for aligned segments and annotations
+    # {(is_primary, is_forward): color}
+    COL_TABLE = {
+        (True, True): pl.colors["blue"],
+        (True, False): pl.colors["yellow"],
+        (False, True): pl.colors["darkblue"],
+        (False, False): pl.colors["darkyellow"],
+        (None, True): pl.colors["blue"],
+        (None, False): pl.colors["yellow"],
+        (True, None): "gray",
+        (False, None): "gray",
+        (None, None): "gray",
+    }
+    ## Colors for soft_clipped regions
+    # {(is_primary: color}
+    COL_TABLE_READ = {
+        True: pl.colors["red"],
+        False: pl.colors["darkred"],
+        None: pl.colors["red"],
+    }
+
+    ##### Making traces #####
+    ## Hover text
+    def _trace_text(
+        is_primary: Optional[bool], is_forward: Optional[bool], which_end: str
+    ):
+        _reads, _read_rows, _sc_lens = _filter_by_flag(is_primary, is_forward)
+        return pl.scatter(
+            x=[
+                read.reference_start if which_end == "start" else read.reference_end
+                for read in _reads
+            ],
+            y=[row_id for row_id in _read_rows],
             text=[
                 "<br>".join(
                     [
@@ -102,26 +156,28 @@ def show_read_pileup(
                         f"clip: {b_sc:6,} bp and {e_sc:6,} bp",
                     ]
                 )
-                for read, (b_sc, e_sc) in zip(reads, sc_lens)
+                for read, (b_sc, e_sc) in zip(_reads, _sc_lens)
             ],
-            col=(
-                "gray"
-                if not color_strand
-                else [
-                    pl.colors["blue"] if read.flag == 0 else pl.colors["yellow"]
-                    for read in reads
-                ]
-            ),
+            col=COL_TABLE[(is_primary, is_forward)],
             marker_size=marker_size,
+            use_webgl=use_webgl,
         )
-        for x in (
-            [read.reference_start for read in reads],  # 5'-end
-            [read.reference_end for read in reads],  # 3'-end
+
+    traces_text = [
+        _trace_text(
+            is_primary,
+            is_forward,
+            which_end,
         )
+        for is_primary in ((True, False) if show_suppl else (None,))
+        for is_forward in ((True, False) if color_strand else (None,))
+        for which_end in ("start", "end")
     ]
-    # Entire read
-    traces_read = [
-        pl.lines(
+
+    ## Entire read
+    def _trace_read(is_primary: Optional[bool]):
+        _reads, _read_rows, _sc_lens = _filter_by_flag(is_primary=is_primary)
+        return pl.lines(
             [
                 (
                     read.reference_start - b_sc,
@@ -129,28 +185,40 @@ def show_read_pileup(
                     read.reference_end + e_sc,
                     row_id,
                 )
-                for read, row_id, (b_sc, e_sc) in zip(reads, read_rows, sc_lens)
+                for read, row_id, (b_sc, e_sc) in zip(_reads, _read_rows, _sc_lens)
             ],
-            col=pl.colors["red"],
+            col=COL_TABLE_READ[is_primary],
             width=line_width,
+            use_webgl=use_webgl,
         )
+
+    traces_read = [
+        _trace_read(is_primary)
+        for is_primary in ((True, False) if show_suppl else (None,))
     ]
-    # Aligned segment
-    traces_align = [
-        pl.lines(
+
+    ## Aligned segment
+    def _trace_align(is_primary: Optional[bool], is_forward: Optional[bool]):
+        _reads, _read_rows, _ = _filter_by_flag(
+            is_primary=is_primary, is_forward=is_forward
+        )
+        return pl.lines(
             [
                 (read.reference_start, row_id, read.reference_end, row_id)
-                for read, row_id in zip(reads, read_rows)
-                if not color_strand or read.flag == flag
+                for read, row_id in zip(_reads, _read_rows)
             ],
-            col=col,
+            col=COL_TABLE[(is_primary, is_forward)],
             width=line_width,
+            use_webgl=use_webgl,
         )
-        for flag, col in (
-            ((0, pl.colors["blue"]), (16, pl.colors["yellow"]))
-            if color_strand
-            else ((None, "gray"),)
+
+    traces_align = [
+        _trace_align(
+            is_primary,
+            is_forward,
         )
+        for is_primary in ((True, False) if show_suppl else (None,))
+        for is_forward in ((True, False) if color_strand else (None,))
     ]
 
     fig = pl.figure(
