@@ -45,6 +45,7 @@ def show_read_pileup(
     color_strand: bool = False,
     marker_size: int = 2,
     line_width: int = 2,
+    line_width_clip: int = 1,
     width: int = 1000,
     height: int = 400,
     layout: Optional[go.Layout] = None,
@@ -76,20 +77,20 @@ def show_read_pileup(
         reads = list(filter(lambda read: read.flag in (0, 16), reads))
 
     # soft-clipped length for each end
-    sc_lens = [(read.qstart, read.inferred_length - read.qend) for read in reads]
+    clip_lens = [(read.qstart, read.inferred_length - read.qend) for read in reads]
 
     # calculate row ID for each read
     read_rows = align_pileup(
         [
-            (read.reference_start - b_sc, read.reference_end + e_sc)
-            for read, (b_sc, e_sc) in zip(reads, sc_lens)
+            (read.reference_start - b_clip, read.reference_end + e_clip)
+            for read, (b_clip, e_clip) in zip(reads, clip_lens)
         ]
     )
 
     ##### Filter functions for reads #####
     def _filter_by_read(cond_read):
         return list(
-            zip(*(filter(lambda t: cond_read(t[0]), zip(reads, read_rows, sc_lens))))
+            zip(*(filter(lambda t: cond_read(t[0]), zip(reads, read_rows, clip_lens))))
         )
 
     def _filter_by_flag(
@@ -98,7 +99,7 @@ def show_read_pileup(
         assert is_primary in (None, True, False)
         assert is_forward in (None, True, False)
         if is_primary is None and is_forward is None:
-            return reads, read_rows, sc_lens
+            return reads, read_rows, clip_lens
         return _filter_by_read(
             lambda read: (
                 True
@@ -139,7 +140,7 @@ def show_read_pileup(
     def _trace_text(
         is_primary: Optional[bool], is_forward: Optional[bool], which_end: str
     ):
-        _reads, _read_rows, _sc_lens = _filter_by_flag(is_primary, is_forward)
+        _reads, _read_rows, _clip_lens = _filter_by_flag(is_primary, is_forward)
         return pl.scatter(
             x=[
                 read.reference_start if which_end == "start" else read.reference_end
@@ -153,10 +154,10 @@ def show_read_pileup(
                         f"flag = {read.flag}",
                         f"ref: {read.reference_start:8,} - {read.reference_end:8,}",
                         f"read: {read.qstart:6,} - {read.qend:6,}",
-                        f"clip: {b_sc:6,} bp and {e_sc:6,} bp",
+                        f"clip: {b_clip:6,} bp and {e_clip:6,} bp",
                     ]
                 )
-                for read, (b_sc, e_sc) in zip(_reads, _sc_lens)
+                for read, (b_clip, e_clip) in zip(_reads, _clip_lens)
             ],
             col=COL_TABLE[(is_primary, is_forward)],
             marker_size=marker_size,
@@ -176,19 +177,21 @@ def show_read_pileup(
 
     ## Entire read
     def _trace_read(is_primary: Optional[bool]):
-        _reads, _read_rows, _sc_lens = _filter_by_flag(is_primary=is_primary)
+        _reads, _read_rows, _clip_lens = _filter_by_flag(is_primary=is_primary)
         return pl.lines(
             [
                 (
-                    read.reference_start - b_sc,
+                    read.reference_start - b_clip,
                     row_id,
-                    read.reference_end + e_sc,
+                    read.reference_end + e_clip,
                     row_id,
                 )
-                for read, row_id, (b_sc, e_sc) in zip(_reads, _read_rows, _sc_lens)
+                for read, row_id, (b_clip, e_clip) in zip(
+                    _reads, _read_rows, _clip_lens
+                )
             ],
             col=COL_TABLE_READ[is_primary],
-            width=line_width,
+            width=line_width_clip,
             use_webgl=use_webgl,
         )
 
