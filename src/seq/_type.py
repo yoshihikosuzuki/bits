@@ -92,14 +92,19 @@ class BedRecord(SeqInterval):
 
     @classmethod
     def from_string(cls, region: str):
-        """Convert from e.g. `chr1:1000-2000`"""
+        """Convert from e.g. `chr1:1000-2000` (1-index, closed) into 0-index, open"""
         chrom, b_e = region.split(":")
         b, e = b_e.split("-")
-        return cls(chr=chrom, b=int(b), e=int(e))
+        return cls(chr=chrom, b=int(b) - 1, e=int(e))
 
     @property
     def length(self) -> int:
         return self.e - self.b
+
+    @property
+    def string(self) -> str:
+        """Covert 0-index, end open into 1-index, end closed"""
+        return f"{self.chr}:{self.b + 1}-{self.e}"
 
 
 @dataclass
