@@ -25,7 +25,6 @@ from ._util import (
     ascii_to_phred,
     calc_hp_ds_ts,
     compress_homopolymer,
-    parse_region,
     phred_to_log10_p_correct,
     phred_to_log10_p_error,
     revcomp_seq,

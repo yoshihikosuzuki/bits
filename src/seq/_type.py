@@ -70,7 +70,7 @@ class DazzRecord(FastaRecord):
 
 
 @dataclass
-class SeqInterval:
+class SeqInterval(ExplicitRepr):
     """Class for an interval on a sequence."""
 
     b: int
@@ -82,15 +82,20 @@ class SeqInterval:
 
 
 @dataclass
-class BedRecord(ExplicitRepr):
+class BedRecord(SeqInterval):
     """Class for an interval on a chromosomal sequence."""
 
     chr: str
-    b: int
-    e: int
 
     def __repr__(self) -> str:
-        return self._order_repr(list(vars(self).keys()))
+        return self._order_repr(["chr", "b", "e"])
+
+    @classmethod
+    def from_string(cls, region: str):
+        """Convert from e.g. `chr1:1000-2000`"""
+        chrom, b_e = region.split(":")
+        b, e = b_e.split("-")
+        return cls(chr=chrom, b=int(b), e=int(e))
 
     @property
     def length(self) -> int:

@@ -2,8 +2,6 @@ from typing import List, Sequence, Union
 
 import numpy as np
 
-from ._type import BedRecord
-
 
 def findall(seq: str, query: str) -> List[int]:
     """List up all the positions of `query` in `seq`."""
@@ -131,10 +129,3 @@ def phred_to_log10_p_correct(phred: int) -> float:
     """Convert Phred score into log10(Pr{base is correct})."""
     assert 0 <= phred <= 93, "`phred` must be in a range of [0..93]"
     return PHRED_TO_LOG_CORRECT[phred]
-
-
-def parse_region(region: str) -> BedRecord:
-    """Convert e.g. `chr:1000-2000` into a BedRecord object."""
-    chrom, b_e = region.split(":")
-    b, e = b_e.split("-")
-    return BedRecord(chr=chrom, b=int(b), e=int(e))

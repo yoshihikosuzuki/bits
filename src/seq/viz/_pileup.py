@@ -44,6 +44,7 @@ def show_read_pileup(
     in_bam: str,
     region: str,
     require_span: bool = False,
+    min_read_len: Optional[int] = None,
     show_suppl: bool = False,
     color_strand: bool = False,
     min_spacing: int = 100,
@@ -79,6 +80,8 @@ def show_read_pileup(
     reads = load_bam(in_bam, region, require_span)
     if not show_suppl:
         reads = list(filter(lambda read: read.flag in (0, 16), reads))
+    if min_read_len is not None:
+        reads = list(filter(lambda read: read.query_length >= min_read_len, reads))
 
     # soft-clipped length for each end
     clip_lens = [(read.qstart, read.inferred_length - read.qend) for read in reads]
