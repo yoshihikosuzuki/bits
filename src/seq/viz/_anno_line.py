@@ -2,8 +2,9 @@ from typing import Optional, Sequence, Union
 
 import plotly.graph_objects as go
 import plotly_light as pl
+import vcf
 
-from .._io import load_bed
+from .._io import load_bed, load_vcf
 from .._type import BedRecord
 
 
@@ -169,6 +170,51 @@ def trace_bed(
     return pl.lines(
         [(max(x.b - pad, 0), name, x.e + pad, name) for x in data],
         text=[f"{x.chr}:{x.b}-{x.e}" for x in data],
+        width=width,
+        col=col,
+        name=name,
+        show_legend=False,
+    )
+
+
+def trace_vcf(
+    data: Union[str, Sequence[vcf.model._Record]],
+    chrom: str,
+    name: str,
+    col: str,
+    width: float = 8,
+    pad: float = 0,
+    single_sample: bool = False,
+    return_trace: bool = True,
+):
+    """Make a Figure object from a .vcf file or a list of vcf.model._Record
+
+    Parameters
+    ----------
+    data
+        Name of a .vcf file, or a list of `vcf.model._Record`
+    pad
+        Size of paddings for each record. [`r.b - pad`..`r.b + pad`] is drawn.
+    """
+    if isinstance(data, str):
+        data = load_vcf(data)
+    data = list(filter(lambda x: x.CHROM == chrom, data))
+
+    if len(data) == 0:
+        return pl.lines(
+            [(0, name, 0, name)], width=0, col=col, name=name, show_legend=False
+        )
+
+    return pl.lines(
+        [(max(x.start - pad, 0), name, x.end + pad, name) for x in data],
+        text=[
+            (
+                f"{x.CHROM} @ {x.POS}<br>{x.REF} -> {x.ALT}<br>{x.INFO}"
+                if not single_sample
+                else f"{x.CHROM} @ {x.POS}<br>{x.REF} -> {x.ALT}<br>{x.INFO}<br>{x.samples[0].sample}\t{x.samples[0].gt_type}\t{x.samples[0].gt_bases}"
+            )
+            for x in data
+        ],
         width=width,
         col=col,
         name=name,

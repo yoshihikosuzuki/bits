@@ -1,6 +1,7 @@
 from typing import List, Optional, Sequence, Tuple, Type, Union
 
 import pysam
+import vcf
 from logzero import logger
 from pyfastx import Fasta, Fastq
 
@@ -208,7 +209,10 @@ def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
 
 
 def load_bam(
-    in_bam: str, region: Union[str, BedRecord], require_span: bool = False
+    in_bam: str,
+    region: Union[str, BedRecord],
+    require_span: bool = False,
+    verbose: bool = True,
 ) -> List[pysam.AlignedSegment]:
     r = BedRecord.from_string(region) if isinstance(region, str) else region
     mappings = list(pysam.AlignmentFile(in_bam, "rb").fetch(r.chr, r.b, r.e))
@@ -219,4 +223,29 @@ def load_bam(
                 mappings,
             )
         )
+    if verbose:
+        logger.info(f"{in_bam}: {len(mappings)} records loaded")
     return mappings
+
+
+def load_vcf(
+    in_fname: str,
+    verbose: bool = True,
+) -> List[BedRecord]:
+    """Load a vcf file.
+
+    Parameters
+    ----------
+    in_fname
+        Input file name of a vcf file
+    verbose, optional
+        verbose mode, by default True
+
+    Returns
+    -------
+        A list of records in the vcf file
+    """
+    records = list(vcf.Reader(filename=in_fname))
+    if verbose:
+        logger.info(f"{in_fname}: {len(records)} records loaded")
+    return records
