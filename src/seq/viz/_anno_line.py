@@ -142,9 +142,9 @@ def trace_depth_mean(
 
 def trace_bed(
     data: Union[str, Sequence[BedRecord]],
-    chrom: str,
-    name: str,
-    col: str,
+    chrom: Optional[str] = None,
+    name: str = "track",
+    col: Optional[str] = None,
     width: float = 8,
     pad: float = 0,
     return_trace: bool = True,
@@ -155,12 +155,17 @@ def trace_bed(
     ----------
     data
         Name of a .bed file, or a list of `BedRecords`
+    chrom
+        Chromosome name to be shown (only single sequence plot is supported).
+    name
+        Track name
     pad
         Size of paddings for each record. [`r.b - pad`..`r.b + pad`] is drawn.
     """
     if isinstance(data, str):
         data = load_bed(data)
-    data = list(filter(lambda x: x.chr == chrom, data))
+    if chrom is not None:
+        data = list(filter(lambda x: x.chr == chrom, data))
 
     if len(data) == 0:
         return pl.lines(
@@ -179,9 +184,9 @@ def trace_bed(
 
 def trace_vcf(
     data: Union[str, Sequence[vcf.model._Record]],
-    chrom: str,
-    name: str,
-    col: str,
+    chrom: Optional[str] = None,
+    name: str = "track",
+    col: Optional[str] = None,
     width: float = 8,
     pad: float = 0,
     single_sample: bool = False,
@@ -193,12 +198,17 @@ def trace_vcf(
     ----------
     data
         Name of a .vcf file, or a list of `vcf.model._Record`
+    chrom
+        Chromosome name to be shown (only single sequence plot is supported).
+    name
+        Track name
     pad
         Size of paddings for each record. [`r.b - pad`..`r.b + pad`] is drawn.
     """
     if isinstance(data, str):
         data = load_vcf(data)
-    data = list(filter(lambda x: x.CHROM == chrom, data))
+    if chrom is not None:
+        data = list(filter(lambda x: x.CHROM == chrom, data))
 
     if len(data) == 0:
         return pl.lines(
