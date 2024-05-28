@@ -72,6 +72,7 @@ class DotPlot:
         fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 1000,
         plot_size: int = 500,
         layout: go.Layout = None,
+        return_fig: bool = False,
         out_fname: Optional[str] = None,
         original_plot: bool = False,
         static: bool = False,
@@ -155,7 +156,7 @@ class DotPlot:
             )
         )
 
-        pl.show_image(
+        fig = pl.show_image(
             out_fname,
             static=static,
             width=plot_size,
@@ -163,4 +164,52 @@ class DotPlot:
             x_range=a_range,
             y_range=b_range,
             layout=pl.merge_layout(pl.layout(x_title=a_title, y_title=b_title), layout),
+            return_fig=return_fig,
+        )
+        if return_fig:
+            return fig
+
+    def plot_self(
+        self,
+        seqs: Optional[Union[str, Type[FastaRecord], List[Type[FastaRecord]]]],
+        name: Optional[str] = None,
+        range: Optional[Tuple[int, int]] = None,
+        word_size: int = 10,
+        fig_size: Union[int, Tuple[Optional[int], Optional[int]]] = 1000,
+        plot_size: int = 500,
+        layout: go.Layout = None,
+        return_fig: bool = False,
+        out_fname: Optional[str] = None,
+        original_plot: bool = False,
+        static: bool = False,
+    ):
+        """Draw a self-vs-self dot plot of a single sequence.
+
+        positional arguments:
+          @ seq : Sequence, FastaRecord, or fasta file name.
+
+        optional arguments:
+          @ word_size  : Word size for Gepard.
+          @ fig_size   : Size of the png file of the dot plot (in pixel).
+          @ plot_size  : Display size of the plot image (in pixel).
+          @ out_fname  : Output file name of the dot plot.
+          @ original_plot  : Show the original plot of Gepard.
+          @ static     : Show the plot as a static image.
+        """
+
+        return self.plot(
+            seqs,
+            seqs,
+            name,
+            name,
+            range,
+            range,
+            word_size,
+            fig_size,
+            plot_size,
+            layout,
+            return_fig,
+            out_fname,
+            original_plot,
+            static,
         )
