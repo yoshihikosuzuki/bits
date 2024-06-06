@@ -10,6 +10,53 @@ from .._type import BedRecord
 
 def trace_depth_detail(
     data: Sequence[BedRecord],
+    line_width: float = 2,
+) -> List[go.Trace]:
+    """Coverage data with detailed information about min/max/median coverage to a Trace object.
+
+    Parameters
+    ----------
+    data
+        A list of coverage records that have `.b`, `.min`, `.max`, `.med` as variables.
+    line_width, optional
+        by default 2
+    """
+    x = [r.b for r in data]
+    return [
+        # Min coverage per bin
+        pl.scatter(
+            x,
+            [r.min for r in data],
+            mode="lines",
+            col=pl.colors["red"],
+            name="min",
+            show_legend=True,
+        ),
+        # Max coverage per bin
+        pl.scatter(
+            x,
+            [r.max for r in data],
+            mode="lines",
+            col=pl.colors["yellow"],
+            name="max",
+            show_legend=True,
+        ),
+        # Median coverage per bin
+        pl.scatter(
+            x,
+            [r.med for r in data],
+            mode="lines",
+            col=pl.colors["blue"],
+            name="median",
+            line_width=line_width,
+            show_legend=True,
+        ),
+    ]
+
+
+# TODO: remove?
+def fig_depth_detail(
+    data: Sequence[BedRecord],
     mean_cov: float,
     max_cov: float,
     chrom_len: int,
@@ -47,33 +94,8 @@ def trace_depth_detail(
                 name="global mean",
                 use_webgl=False,
                 show_legend=True,
-            ),
-            pl.scatter(
-                x,
-                [r.min for r in data],
-                mode="lines",
-                col=pl.colors["red"],
-                name="min",
-                show_legend=True,
-            ),
-            pl.scatter(
-                x,
-                [r.max for r in data],
-                mode="lines",
-                col=pl.colors["yellow"],
-                name="max",
-                show_legend=True,
-            ),
-            pl.scatter(
-                x,
-                [r.med for r in data],
-                mode="lines",
-                col=pl.colors["blue"],
-                name="median",
-                line_width=line_width,
-                show_legend=True,
-            ),
-        ],
+            )
+        ] + trace_depth_detail(data, line_width),
         pl.layout(
             title=title,
             y_range=(0, max_cov),
@@ -88,6 +110,28 @@ def trace_depth_detail(
 
 
 def trace_depth_mean(
+    data: Sequence[BedRecord],
+    line_width: float = 1,
+    col: str = "gray",
+) -> go.Trace:
+    """
+
+    Parameters
+    ----------
+    data
+       Each record has to have `.b` and `.cov` variables.
+    """
+    return pl.scatter(
+        [r.b for r in data],
+        [r.cov for r in data],
+        mode="lines",
+        col=col,
+        line_width=line_width,
+        use_webgl=False,
+    )
+
+
+def fig_depth_mean(
     data: Sequence[BedRecord],
     mean_cov: float,
     max_cov: float,
@@ -118,14 +162,7 @@ def trace_depth_mean(
     return pl.figure(
         [
             pl.lines((0, mean_cov, chrom_len, mean_cov), width=line_width, col=col),
-            pl.scatter(
-                [r.b for r in data],
-                [r.cov for r in data],
-                mode="lines",
-                col=col,
-                line_width=line_width,
-                use_webgl=False,
-            ),
+            trace_depth_mean(data, line_width),
         ],
         pl.layout(
             title=title,
