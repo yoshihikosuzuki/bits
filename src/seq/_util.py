@@ -1,4 +1,4 @@
-from typing import List, Sequence, Union
+from typing import List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -51,6 +51,25 @@ F_TO_RC = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 def revcomp_seq(seq: str) -> str:
     return "".join([F_TO_RC[c] for c in seq[::-1]])
+
+
+def run_length_encoding(seq: str) -> List[Tuple[str, int]]:
+    if len(seq) == 0:
+        return []
+
+    encoded = []
+    prev_char = seq[0]
+    count = 1
+    for char in seq[1:]:
+        if char == prev_char:
+            count += 1
+        else:
+            encoded.append((prev_char, count))
+            prev_char = char
+            count = 1
+    encoded.append((prev_char, count))
+
+    return encoded
 
 
 def compress_homopolymer(seq: str) -> str:

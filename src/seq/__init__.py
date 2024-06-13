@@ -25,10 +25,12 @@ from ._util import (
     ascii_to_phred,
     calc_hp_ds_ts,
     compress_homopolymer,
+    findall,
     phred_to_log10_p_correct,
     phred_to_log10_p_error,
     revcomp_seq,
     reverse_seq,
+    run_length_encoding,
     split_seq,
 )
 from .viz import *
