@@ -136,6 +136,8 @@ class DotPlot:
                     0,
                     sum([seq.length for seq in load_fasta(b_fasta, verbose=False)]),
                 )
+            # Flip `b_range` so that left top of the image is (0, 0)
+            b_range = (b_range[1], b_range[0])
 
         if out_fname is None:
             out_fname = f"{self.tmp_dir}/dotplot.png"
