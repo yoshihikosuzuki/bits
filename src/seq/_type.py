@@ -97,14 +97,20 @@ class BedRecord(SeqInterval):
         b, e = b_e.split("-")
         return cls(chr=chrom, b=int(b) - 1, e=int(e))
 
+    def to_string(self, comma: bool = False):
+        """Covert 0-index, end open into 1-index, end closed (e.g. `chr1:101-200`)"""
+        if not comma:
+            return f"{self.chr}:{self.b + 1}-{self.e}"
+        else:
+            return f"{self.chr}:{self.b + 1:,}-{self.e:,}"
+
     @property
     def length(self) -> int:
         return self.e - self.b
 
     @property
     def string(self) -> str:
-        """Covert 0-index, end open into 1-index, end closed"""
-        return f"{self.chr}:{self.b + 1}-{self.e}"
+        return self.to_string()
 
 
 @dataclass

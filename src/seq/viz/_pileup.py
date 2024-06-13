@@ -1,9 +1,11 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple, Union
 
 import plotly.graph_objects as go
 import plotly_light as pl
+import pysam
 
 from .._io import load_bam
+from .._type import BedRecord
 
 
 def align_pileup(
@@ -41,13 +43,13 @@ def align_pileup(
 
 
 def show_read_pileup(
-    in_bam: str,
-    region: str,
+    in_bam_or_reads: Union[str, Sequence[pysam.AlignedSegment]],
+    region: Union[str, BedRecord],
     require_span: bool = False,
     min_read_len: Optional[int] = None,
+    min_spacing: Union[float, int] = 0.01,
     show_suppl: bool = False,
     color_strand: bool = False,
-    min_spacing: int = 100,
     marker_size: int = 2,
     line_width: int = 2,
     line_width_clip: int = 1,
@@ -61,10 +63,17 @@ def show_read_pileup(
 
     Parameters
     ----------
-    in_bam
-        Path to a .bam file of mapped reads.
+    in_bam_or_reads
+        Path to a .bam file of mapped reads. Or, a list of mappings.
     region
-        e.g. "chr1:1000-2000"
+        A string (e.g. "chr1:1000-2000") or BedRecord.
+    require_span
+        Show only reads spanning `region`.
+    min_read_len
+        To be shown
+    min_spacing
+        Min size of gaps between read bars. Ratio w.r.t. `region` size (in float, between 0 and 1)
+        or base pairs (in int)
     show_suppl
         Show supplementary alignments and secondary alignments as well as primary alignments.
     color_strand
@@ -76,8 +85,19 @@ def show_read_pileup(
     -------
         pl.Figure if `return_fig` is True, otherwise None
     """
+    region = BedRecord.from_string(region) if isinstance(region, str) else region
+    min_spacing = (
+        region.length * min_spacing
+        if 0 < min_spacing and min_spacing < 1
+        else min_spacing
+    )
+
     ##### Preparing necassary data #####
-    reads = load_bam(in_bam, region, require_span)
+    if isinstance(in_bam_or_reads, str):
+        reads = load_bam(in_bam_or_reads, region, require_span)
+    else:
+        reads = in_bam_or_reads
+
     if not show_suppl:
         reads = list(filter(lambda read: read.flag in (0, 16), reads))
     if min_read_len is not None:
@@ -245,7 +265,7 @@ def show_read_pileup(
                 x_grid=True,
                 y_grid=True,
                 grid_col="#eeeeee",
-                title=f"{region}",
+                title=f"{region.to_string(comma=True)}",
                 x_title="Genomic Position",
                 y_title="Reads",
                 x_ticks_minor="outside",
