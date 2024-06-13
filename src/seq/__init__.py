@@ -7,6 +7,7 @@ from ._io import (
     load_fasta,
     load_fastq,
     load_trf,
+    load_vcf,
     save_fasta,
     save_fastq,
 )

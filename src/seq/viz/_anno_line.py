@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, List
 
 import plotly.graph_objects as go
 import plotly_light as pl
@@ -84,7 +84,6 @@ def fig_depth_detail(
     -------
         Figure object
     """
-    x = [r.b for r in data]
     return pl.figure(
         [
             pl.lines(

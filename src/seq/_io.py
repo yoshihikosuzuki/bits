@@ -1,7 +1,6 @@
 from typing import List, Optional, Sequence, Tuple, Type, Union
 
 import pysam
-import vcf
 from logzero import logger
 from pyfastx import Fasta, Fastq
 
@@ -230,6 +229,7 @@ def load_bam(
 
 def load_vcf(
     in_fname: str,
+    region: Optional[Union[str, BedRecord]] = None,
     verbose: bool = True,
 ) -> List[BedRecord]:
     """Load a vcf file.
@@ -245,7 +245,15 @@ def load_vcf(
     -------
         A list of records in the vcf file
     """
-    records = list(vcf.Reader(filename=in_fname))
+    if region is None:
+        variants = list(pysam.VariantFile(in_fname).fetch())
+    else:
+        r = BedRecord.from_string(region) if isinstance(region, str) else region
+        variants = list(pysam.VariantFile(in_fname).fetch(r.chr, r.b, r.e))
     if verbose:
-        logger.info(f"{in_fname}: {len(records)} records loaded")
-    return records
+        logger.info(f"{in_fname}: {len(variants)} records loaded")
+    return variants
+
+
+def load_gff(in_fname: str):
+    pass
