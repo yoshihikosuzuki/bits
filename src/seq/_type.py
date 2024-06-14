@@ -1,32 +1,15 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 import numpy as np
 
-
-class ExplicitRepr(ABC):
-    """An abstract class where the order of variables displayed in the repr()
-    string must be explicityly specified.
-
-    The `__repr__` method must be defined in every child class to specify the
-    order of variables to be displayed in the repr() string.
-    Pass a list of variable names to the helper method, `_order_repr()`, to
-    generate the repr() string.
-    """
-
-    def _order_repr(self, var_names: List[str]) -> str:
-        var_reprs = ", ".join(map(lambda x: f"{x}={repr(getattr(self, x))}", var_names))
-        return f"{self.__class__.__name__}({var_reprs})"
-
-    @abstractmethod
-    def __repr__(self) -> str:
-        return self._order_repr(["seq"])  # NOTE: This is an example
+##################################################################################################
+# Sequence classes
+##################################################################################################
 
 
 @dataclass
-class SeqRecord(ExplicitRepr):
-    """Abstract class for sequence object."""
+class SeqRecord:
+    """Abstract class for a sequence object."""
 
     seq: str
 
@@ -40,9 +23,11 @@ class FastaRecord(SeqRecord):
     """Sequence with name."""
 
     name: str
+    seq: str = SeqRecord.__dataclass_fields__["seq"].default
 
-    def __repr__(self) -> str:
-        return self._order_repr(["name", "seq"])
+    def __init__(self, name: str, seq: str):
+        super().__init__(seq)
+        self.name = name
 
 
 @dataclass
@@ -50,9 +35,6 @@ class FastqRecord(FastaRecord):
     """Sequence with name and base qualities."""
 
     qual: str
-
-    def __repr__(self) -> str:
-        return self._order_repr(["name", "seq", "qual"])
 
     @property
     def qual_phred(self) -> np.ndarray:
@@ -64,14 +46,22 @@ class DazzRecord(FastaRecord):
     """Sequence with name and DAZZ_DB ID."""
 
     id: int
+    name: str = FastaRecord.__dataclass_fields__["name"].default
+    seq: str = FastaRecord.__dataclass_fields__["seq"].default
 
-    def __repr__(self) -> str:
-        return self._order_repr(["id", "name", "seq"])
+    def __init__(self, id: int, name: str, seq: str):
+        super().__init__(name, seq)
+        self.id = id
+
+
+##################################################################################################
+# Interval classes
+##################################################################################################
 
 
 @dataclass
-class SeqInterval(ExplicitRepr):
-    """Class for an interval on a sequence."""
+class SeqInterval:
+    """Abstract class for an interval object."""
 
     b: int
     e: int
@@ -86,9 +76,12 @@ class BedRecord(SeqInterval):
     """Class for an interval on a chromosomal sequence."""
 
     chr: str
+    b: int = SeqInterval.__dataclass_fields__["b"].default
+    e: int = SeqInterval.__dataclass_fields__["e"].default
 
-    def __repr__(self) -> str:
-        return self._order_repr(["chr", "b", "e"])
+    def __init__(self, chr: str, b: int, e: int):
+        super().__init__(b, e)
+        self.chr = chr
 
     @classmethod
     def from_string(cls, region: str):
@@ -117,9 +110,6 @@ class BedRecord(SeqInterval):
 class SatRecord(BedRecord):
     unit_seq: str
     n_copy: float
-
-    def __repr__(self) -> str:
-        return self._order_repr(["chr", "b", "e", "unit_seq", "n_copy"])
 
     @property
     def array_len(self):
