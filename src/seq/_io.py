@@ -193,14 +193,16 @@ def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
     with open(in_trf, "r") as f:
         for line in f:
             if line.startswith("@"):
-                c = line.strip()[1:]
+                chrom = line.strip()[1:]
                 continue
             data = line.strip().split()
-            b = int(data[0])
-            e = int(data[1])
-            n_copy = float(data[3])
-            unit_seq = data[13]
-            sat = SatRecord(c, b, e, unit_seq, n_copy)
+            sat = SatRecord(
+                chr=chrom,
+                b=int(data[0]),
+                e=int(data[1]),
+                unit_seq=data[13],
+                n_copy=float(data[3]),
+            )
             sats.append(sat)
     if verbose:
         logger.info(f"{in_trf}: {len(sats)} records loaded")

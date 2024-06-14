@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import List
 
 import numpy as np
 
@@ -118,9 +118,12 @@ class SatRecord(BedRecord):
     unit_seq: str
     n_copy: float
 
+    def __repr__(self) -> str:
+        return self._order_repr(["chr", "b", "e", "unit_seq", "n_copy"])
+
     @property
     def array_len(self):
-        return self.e - self.b
+        return self.length
 
     @property
     def unit_len(self):
