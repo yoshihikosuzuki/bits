@@ -15,7 +15,6 @@ from ._stats import SeqStats, calc_nx, calc_seq_stats, load_seq_stats
 from ._type import (
     BedRecord,
     DazzRecord,
-    ExplicitRepr,
     FastaRecord,
     FastqRecord,
     SatRecord,
