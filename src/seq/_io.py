@@ -5,7 +5,7 @@ from logzero import logger
 from pyfastx import Fasta, Fastq
 
 from ..util._proc import run_command
-from ._type import BedRecord, FastaRecord, FastqRecord, SatRecord
+from ._type import BedRecord, FastaRecord, FastqRecord, Region, SatRecord
 from ._util import split_seq
 
 
@@ -151,6 +151,7 @@ def save_fastq(
 
 def load_bed(
     in_fname: str,
+    region: Optional[Union[str, Region]] = None,
     attrs: List[Tuple[str, Type]] = [],
     verbose: bool = True,
 ) -> List[BedRecord]:
@@ -169,6 +170,9 @@ def load_bed(
     -------
         A list of records in the bed file
     """
+    if region is not None and isinstance(region, str):
+        region = Region.from_string(region)
+
     records = []
     with open(in_fname, "r") as f:
         for line in f:
@@ -180,11 +184,41 @@ def load_bed(
                     logger.warn(f"Ignoring record: {line.strip()}")
                 continue
             r = BedRecord(chr=data[0], b=int(data[1]), e=int(data[2]))
+            if region is not None and not (
+                region.chr == r.chr
+                and (region.b is None or region.b <= r.b)
+                and (region.e is None or r.e <= region.e)
+            ):
+                continue
             for (attr_name, attr_type), value in zip(attrs, data[3:]):
                 r.__setattr__(attr_name, attr_type(value))
             records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
+    return records
+
+
+def filter_bed(
+    data: Sequence[BedRecord],
+    region: Optional[Union[str, Region]],
+    verbose: bool = True,
+) -> List[BedRecord]:
+    """Filter BedRecords that are already loaded."""
+    if region is None:
+        return data
+
+    if isinstance(region, str):
+        region = Region.from_string(region)
+    n_before = len(data)
+    records = list(
+        filter(
+            lambda x: x.chr == region.chr and region.b <= x.b and x.e <= region.e,
+            data,
+        )
+    )
+
+    if verbose:
+        logger.info(f"{n_before} -> {len(records)} records")
     return records
 
 
@@ -211,16 +245,34 @@ def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
 
 def load_bam(
     in_bam: str,
-    region: Union[str, BedRecord],
+    region: Optional[Union[str, Region]] = None,
     require_span: bool = False,
     verbose: bool = True,
 ) -> List[pysam.AlignedSegment]:
-    r = BedRecord.from_string(region) if isinstance(region, str) else region
-    mappings = list(pysam.AlignmentFile(in_bam, "rb").fetch(r.chr, r.b, r.e))
+    if region is None:
+        mappings = list(pysam.AlignmentFile(in_bam).fetch())
+    elif isinstance(region, str):
+        mappings = list(pysam.AlignmentFile(in_bam).fetch(region=region))
+    elif isinstance(region, Region):
+        mappings = list(
+            pysam.AlignmentFile(in_bam).fetch(
+                contig=region.chr, start=region.b, end=region.e
+            )
+        )
+    else:
+        logger.error(f"Invalid `region` ({region}, type = {type(region)})")
+
     if require_span:
+        assert region is not None, "`region` must be specified for `require_span`"
+        if isinstance(region, str):
+            region = Region.from_string(region)
+        assert (
+            region.b is not None and region.e is not None
+        ), "Both start/end positions must be specified in `region` for `require_span`"
         mappings = list(
             filter(
-                lambda m: m.reference_start <= r.b - 1 and m.reference_end >= r.e + 1,
+                lambda m: m.reference_start <= region.b - 1
+                and m.reference_end >= region.e + 1,
                 mappings,
             )
         )
@@ -231,9 +283,9 @@ def load_bam(
 
 def load_vcf(
     in_fname: str,
-    region: Optional[Union[str, BedRecord]] = None,
+    region: Optional[Union[str, Region]] = None,
     verbose: bool = True,
-) -> List[BedRecord]:
+) -> List[pysam.VariantRecord]:
     """Load a vcf file.
 
     Parameters
@@ -249,9 +301,17 @@ def load_vcf(
     """
     if region is None:
         variants = list(pysam.VariantFile(in_fname).fetch())
+    elif isinstance(region, str):
+        variants = list(pysam.VariantFile(in_fname).fetch(region=region))
+    elif isinstance(region, Region):
+        variants = list(
+            pysam.VariantFile(in_fname).fetch(
+                contig=region.chr, start=region.b, end=region.e
+            )
+        )
     else:
-        r = BedRecord.from_string(region) if isinstance(region, str) else region
-        variants = list(pysam.VariantFile(in_fname).fetch(r.chr, r.b, r.e))
+        logger.error(f"Invalid `region` ({region}, type = {type(region)})")
+
     if verbose:
         logger.info(f"{in_fname}: {len(variants)} records loaded")
     return variants

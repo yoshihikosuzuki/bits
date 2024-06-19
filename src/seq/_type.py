@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 
@@ -104,6 +105,33 @@ class BedRecord(SeqInterval):
     @property
     def string(self) -> str:
         return self.to_string()
+
+
+# TODO: integrate into BedRecord?
+@dataclass
+class Region:
+    """Class for a genomic region object.
+    In contrast to `BedRecord`, `b` and `e` can be None."""
+
+    chr: str
+    b: Optional[int] = None
+    e: Optional[int] = None
+
+    @classmethod
+    def from_string(cls, region: str):
+        """Convert from e.g. `chr1:1000-2000` (1-index, closed) into 0-index, open"""
+        data = region.split(":")
+        if len(data) == 1:  # only chromosome. e.g. "chr1"
+            chrom, b, e = data[0], None, None
+        else:
+            chrom, b_e = data
+            data = b_e.split("-")
+            if len(data) == 1:  # single position
+                b, e = int(data[0]), int(data[0])
+            else:
+                b, e = map(int, data)
+            b -= 1
+        return cls(chr=chrom, b=b, e=e)
 
 
 @dataclass

@@ -2,6 +2,7 @@ from ._align import EdlibAlignment, EdlibRunner
 from ._cigar import Cigar, FlattenCigar
 from ._dazz import db_to_n_blocks, db_to_n_reads, fasta_to_db, load_db, load_db_track
 from ._io import (
+    filter_bed,
     load_bam,
     load_bed,
     load_fasta,
@@ -17,6 +18,7 @@ from ._type import (
     DazzRecord,
     FastaRecord,
     FastqRecord,
+    Region,
     SatRecord,
     SeqInterval,
     SeqRecord,
