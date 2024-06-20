@@ -5,7 +5,7 @@ import plotly_light as pl
 import pysam
 
 from .._io import load_bam
-from .._type import BedRecord
+from .._type import BedRecord, Region
 
 
 def align_pileup(
@@ -44,7 +44,7 @@ def align_pileup(
 
 def show_read_pileup(
     in_bam_or_reads: Union[str, Sequence[pysam.AlignedSegment]],
-    region: Union[str, BedRecord],
+    region: Union[str, Region],
     require_span: bool = False,
     min_read_len: Optional[int] = None,
     min_spacing: Union[float, int] = 0.01,
@@ -85,7 +85,7 @@ def show_read_pileup(
     -------
         pl.Figure if `return_fig` is True, otherwise None
     """
-    region = BedRecord.from_string(region) if isinstance(region, str) else region
+    region = Region.from_string(region) if isinstance(region, str) else region
     min_spacing = (
         region.length * min_spacing
         if 0 < min_spacing and min_spacing < 1

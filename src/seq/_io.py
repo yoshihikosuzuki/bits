@@ -5,7 +5,7 @@ from logzero import logger
 from pyfastx import Fasta, Fastq
 
 from ..util._proc import run_command
-from ._type import BedRecord, FastaRecord, FastqRecord, Region, SatRecord
+from ._type import BedRecord, FastaRecord, FastqRecord, GffRecord, Region, SatRecord
 from ._util import split_seq
 
 
@@ -317,5 +317,49 @@ def load_vcf(
     return variants
 
 
-def load_gff(in_fname: str):
-    pass
+def load_gff(
+    in_fname: str,
+    region: Optional[Union[str, Region]] = None,
+    filter_type: Optional[str] = None,
+    verbose: bool = True,
+) -> List[GffRecord]:
+    """Load a gff file.
+
+    Parameters
+    ----------
+    in_fname
+        Input file name of a gff file
+    region, optional
+        Region to be loaded
+    filter_type, optional
+        Type of records to be loaded. e.g. "gene"
+    """
+    records = []
+    with open(in_fname, "r") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            chrom, source, _type, b, e, _, strand, _, attrs = line.strip().split("\t")
+            if filter_type is not None and _type != filter_type:
+                continue
+            b, e = int(b), int(e)
+            if region is not None and not (
+                region.chr == chrom and region.b <= b and e < region.e
+            ):
+                continue
+            attrs = {
+                k: v for k, v in map(lambda attr: attr.split("="), attrs.split(";"))
+            }
+            records.append(
+                GffRecord(
+                    chr=chrom,
+                    b=b,
+                    e=e,
+                    forward=(strand == "+"),
+                    type=_type,
+                    attrs=attrs,
+                )
+            )
+    if verbose:
+        logger.info(f"{in_fname}: {len(records)} records loaded")
+    return records

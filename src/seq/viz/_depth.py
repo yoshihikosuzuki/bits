@@ -4,12 +4,11 @@ import plotly.graph_objects as go
 import plotly_light as pl
 
 from .._type import BedRecord
-from ._anno_line import trace_bed_attr
+from ._region_feature import trace_bed_attr
 
 
 def fig_depth_detail(
     data: Sequence[BedRecord],
-    max_cov: float,
     mean_cov: Optional[float] = None,
     line_width: float = 2,
     layout: Optional[go.Layout] = None,
@@ -20,8 +19,6 @@ def fig_depth_detail(
         A list of coverage records that have `.b`, `.min`, `.max`, `.med` as variables.
     @ mean_cov
         Global mean coverage.
-    @ max_cov
-        Max coverage to be shown.
     """
     return pl.figure(
         (
@@ -62,7 +59,6 @@ def fig_depth_detail(
         ],
         pl.merge_layout(
             pl.layout(
-                y_range=(0, max_cov),
                 x_bounding_line=True,
                 y_bounding_line=True,
                 x_mirror=True,
@@ -77,7 +73,6 @@ def fig_depth_detail(
 
 def fig_depth_mean(
     data: Sequence[BedRecord],
-    max_cov: float,
     mean_cov: Optional[float] = None,
     line_width: float = 1,
     col: str = "gray",
@@ -89,8 +84,6 @@ def fig_depth_mean(
         A list of coverage records that have `.b`, `.cov` as variables.
     @ mean_cov
         Global mean coverage.
-    @ max_cov
-        Max coverage to be shown.
     """
     return pl.figure(
         (
@@ -106,12 +99,9 @@ def fig_depth_mean(
             if mean_cov is not None
             else []
         )
-        + [
-            trace_bed_attr(data, attr="cov", col=col, line_width=line_width),
-        ],
+        + [trace_bed_attr(data, attr="cov", col=col, line_width=line_width)],
         pl.merge_layout(
             pl.layout(
-                y_range=(0, max_cov),
                 x_bounding_line=True,
                 y_bounding_line=True,
                 x_mirror=True,

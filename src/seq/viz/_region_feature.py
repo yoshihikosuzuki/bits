@@ -1,4 +1,4 @@
-from typing import Any, Optional, Sequence, Union
+from typing import Optional, Sequence, Type, Union
 
 import plotly.graph_objects as go
 import plotly_light as pl
@@ -57,7 +57,7 @@ def trace_bed(
 def trace_bed_attr(
     data: Union[str, Sequence[BedRecord]],
     attr: str,
-    attr_type: Optional[Any] = None,
+    attr_type: Optional[Type] = None,
     region: Optional[Union[str, Region]] = None,
     col: Optional[str] = None,
     line_width: float = 2,
@@ -93,17 +93,15 @@ def trace_bed_attr(
 
     if name is None:
         name = attr
-    return (
-        pl.scatter(
-            [r.b for r in data],
-            [getattr(r, attr) for r in data],
-            mode="lines",
-            col=col,
-            name=name,
-            line_width=line_width,
-            show_legend=show_legend,
-            use_webgl=use_webgl,
-        ),
+    return pl.scatter(
+        [r.b for r in data],
+        [getattr(r, attr) for r in data],
+        mode="lines",
+        col=col,
+        name=name,
+        line_width=line_width,
+        show_legend=show_legend,
+        use_webgl=use_webgl,
     )
 
 
