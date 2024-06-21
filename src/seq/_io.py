@@ -253,7 +253,7 @@ def load_bam(
         mappings = list(pysam.AlignmentFile(in_bam).fetch())
     elif isinstance(region, str):
         mappings = list(pysam.AlignmentFile(in_bam).fetch(region=region))
-    elif isinstance(region, Region):
+    elif isinstance(region, BedRecord):
         mappings = list(
             pysam.AlignmentFile(in_bam).fetch(
                 contig=region.chr, start=region.b, end=region.e
@@ -303,7 +303,7 @@ def load_vcf(
         variants = list(pysam.VariantFile(in_fname).fetch())
     elif isinstance(region, str):
         variants = list(pysam.VariantFile(in_fname).fetch(region=region))
-    elif isinstance(region, Region):
+    elif isinstance(region, BedRecord):
         variants = list(
             pysam.VariantFile(in_fname).fetch(
                 contig=region.chr, start=region.b, end=region.e

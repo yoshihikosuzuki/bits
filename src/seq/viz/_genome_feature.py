@@ -39,7 +39,7 @@ class GenomePlot:
             pl.merge_layout(
                 pl.layout(
                     width=700,
-                    height=700,
+                    height=1000,
                     x_zeroline=False,
                     y_category=True,
                     y_reversed=True,
@@ -64,10 +64,13 @@ class GenomePlot:
     def add_bed_records(
         self,
         bed_records: Sequence[BedRecord],
-        col: str,
-        opacity: float = 1,
         width: float = 1,
-    ) -> None:
+        col: str = "black",
+        opacity: Optional[float] = None,
+        name: Optional[str] = None,
+        show_legend: bool = False,
+        use_webgl: bool = False,
+    ):
         names_set = set(self.names)
         bed_records = list(filter(lambda x: x.chr in names_set, bed_records))
 
@@ -97,6 +100,19 @@ class GenomePlot:
                 opacity=0,
             )
         )
+        # for legend
+        self.fig.add_trace(
+            pl.scatter(
+                [None],
+                [None],
+                marker_size=10,
+                col=col,
+                opacity=1,
+                name=name,
+                show_legend=show_legend,
+                use_webgl=use_webgl,
+            )
+        )
         self.fig.layout.shapes = tuple(
             list(self.fig.layout.shapes)
             + [
@@ -106,7 +122,7 @@ class GenomePlot:
                     x.e,
                     f"{x.chr}_t",
                     layer="above",
-                    opacity=opacity,
+                    opacity=1,
                     fill_col=col,
                     frame_col=col,
                     frame_width=width,
@@ -114,6 +130,7 @@ class GenomePlot:
                 for x in bed_records
             ]
         )
+        return self
 
     def show(self) -> Optional[go.Figure]:
         pl.show(self.fig)

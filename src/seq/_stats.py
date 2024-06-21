@@ -45,7 +45,9 @@ def calc_seq_stats(in_fastx: str, force: bool = False) -> List[SeqStats]:
     return load_seq_stats(out_stats)
 
 
-def calc_lens(data: Union[str, Sequence[Union[SeqRecord, str, int]]]) -> List[int]:
+def calc_lens(
+    data: Union[str, Sequence[Union[SeqRecord, str, int]]], force: bool = False
+) -> List[int]:
     """Utility function for obtaining sequence lengths.
 
     Parameters
@@ -64,12 +66,13 @@ def calc_lens(data: Union[str, Sequence[Union[SeqRecord, str, int]]]) -> List[in
     lens = None
     if isinstance(data, str):  # Fastx file
         in_fastx = data
+        out_nl = f"{in_fastx}.nl"
+        if not isfile(out_nl) or force:
+            bu.run_command(f"seqkit fx2tab -nl {in_fastx} >{out_nl}")
         lens = list(
             map(
                 int,
-                bu.run_command(f"seqkit fx2tab -nl {in_fastx} | cut -f2")
-                .strip()
-                .split("\n"),
+                bu.run_command(f"cut -f2 {out_nl}").strip().split("\n"),
             )
         )
     elif isinstance(data, Sequence):
@@ -88,6 +91,7 @@ def calc_lens(data: Union[str, Sequence[Union[SeqRecord, str, int]]]) -> List[in
 def calc_nx(
     data: Union[str, Sequence[Union[SeqRecord, str, int]]],
     G: Optional[int] = None,
+    force: bool = False,
 ) -> List[int]:
     """Calaulate Nx (or NGx if G is given) values from a fasta file.
 
@@ -106,7 +110,7 @@ def calc_nx(
     -------
         Nx/NGx values.
     """
-    lens = calc_lens(data)
+    lens = calc_lens(data, force)
     if G is None:
         G = sum(lens)
     thres = [G * x / 100 for x in range(100 + 1)]
