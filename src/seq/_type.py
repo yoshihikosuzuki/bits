@@ -193,4 +193,17 @@ class Region(BedRecord):
 class GffRecord(BedRecord):
     forward: bool
     type: str
-    attrs: Dict
+
+    # Modify __repr__ so all the attributes are displayed
+    def __repr__(self) -> str:
+        fixed_attr_names = ["chr", "b", "e", "forward", "type"]
+        attr_names = fixed_attr_names + list(
+            set(vars(self).keys()) - set(fixed_attr_names)
+        )
+        text = ", ".join(
+            [
+                f"{attr_name}={repr(getattr(self, attr_name))}"
+                for attr_name in attr_names
+            ]
+        )
+        return f"{self.__class__.__name__}({text})"

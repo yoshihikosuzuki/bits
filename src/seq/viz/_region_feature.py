@@ -12,13 +12,24 @@ from .._type import BedRecord, Region
 def trace_bed(
     data: Union[str, Sequence[BedRecord]],
     region: Optional[Union[str, Region]] = None,
-    name: str = "track",
+    text: Optional[Sequence[str]] = None,
+    name: str = "",
     col: Optional[str] = None,
     width: float = 8,
     pad: float = 0,
+    min_len: float = 0,
     use_webgl: bool = False,
 ) -> go.Trace:
     """For plotting the intervals of the bed records.
+
+    NOTE: Add an empty `trace_bed` both at the beginning and at the enf of the list of
+          `trace_bed` for spacing:
+
+          > pl.show(
+                [bs.trace_bed([], name=" ")] +    # dummy
+                [bs.trace_bed(...) for ...] +     # main
+                [be.trace_bed([], name="  ")]     # dummy
+            )
 
     Parameters
     ----------
@@ -27,10 +38,16 @@ def trace_bed(
     region
         Chromosome name (str) or a region to be shown.
         Note that only single sequence is supported for this function.
+    text
+        Hover texts.
+    text_above
+        Texts shown on each record.
     name
         Track name.
     pad
         Size of paddings for each record. [`r.b - pad`..`r.b + pad`] is drawn.
+    min_len
+        Minimum length in the plot for each record.
     """
     if isinstance(data, str):
         data = load_bed(data, region)
@@ -43,9 +60,10 @@ def trace_bed(
             [(0, name, 0, name)], width=0, col=col, name=name, show_legend=False
         )
     else:
+        pads = [max((min_len - x.length) / 2, pad) for x in data]
         return pl.lines(
-            [(max(x.b - pad, 0), name, x.e + pad, name) for x in data],
-            text=[f"{x.chr}:{x.b}-{x.e}" for x in data],
+            [(max(x.b - p, 0), name, x.e + p, name) for x, p in zip(data, pads)],
+            text=[f"{x.chr}:{x.b}-{x.e}" for x in data] if text is None else text,
             width=width,
             col=col,
             name=name,

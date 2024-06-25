@@ -321,6 +321,7 @@ def load_gff(
     in_fname: str,
     region: Optional[Union[str, Region]] = None,
     filter_type: Optional[str] = None,
+    guess_attr_type: bool = True,
     verbose: bool = True,
 ) -> List[GffRecord]:
     """Load a gff file.
@@ -333,7 +334,21 @@ def load_gff(
         Region to be loaded
     filter_type, optional
         Type of records to be loaded. e.g. "gene"
+    guess_attr_type
+        If True, automatically guess the type (only int and float) of each attribute
     """
+
+    def _guess_type(v):
+        try:
+            return int(v)
+        except ValueError:
+            pass
+        try:
+            return float(v)
+        except ValueError:
+            pass
+        return v
+
     records = []
     with open(in_fname, "r") as f:
         for line in f:
@@ -347,19 +362,16 @@ def load_gff(
                 region.chr == chrom and region.b <= b and e < region.e
             ):
                 continue
-            attrs = {
-                k: v for k, v in map(lambda attr: attr.split("="), attrs.split(";"))
-            }
-            records.append(
-                GffRecord(
-                    chr=chrom,
-                    b=b,
-                    e=e,
-                    forward=(strand == "+"),
-                    type=_type,
-                    attrs=attrs,
-                )
+            r = GffRecord(
+                chr=chrom,
+                b=b,
+                e=e,
+                forward=(strand == "+"),
+                type=_type,
             )
+            for k, v in map(lambda attr: attr.split("="), attrs.split(";")):
+                r.__setattr__(k, _guess_type(v) if guess_attr_type else v)
+            records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
     return records
