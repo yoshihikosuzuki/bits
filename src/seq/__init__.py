@@ -20,9 +20,8 @@ from ._type import (
     FastaRecord,
     FastqRecord,
     GffRecord,
-    Region,
     SatRecord,
-    SeqInterval,
+    SegRecord,
     SeqRecord,
 )
 from ._util import (

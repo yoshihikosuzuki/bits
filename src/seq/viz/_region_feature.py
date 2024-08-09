@@ -6,12 +6,12 @@ from logzero import logger
 from pysam import VariantRecord
 
 from .._io import filter_bed, load_bed, load_vcf
-from .._type import BedRecord, Region
+from .._type import BedRecord, SegRecord
 
 
 def trace_bed(
-    data: Union[str, Sequence[BedRecord]],
-    region: Optional[Union[str, Region]] = None,
+    data: Union[str, BedRecord, Sequence[BedRecord]],
+    region: Optional[Union[str, SegRecord]] = None,
     text: Optional[Sequence[str]] = None,
     name: str = "",
     col: Optional[str] = None,
@@ -26,9 +26,10 @@ def trace_bed(
           `trace_bed` for spacing:
 
           > pl.show(
-                [bs.trace_bed([], name=" ")] +    # dummy
-                [bs.trace_bed(...) for ...] +     # main
-                [be.trace_bed([], name="  ")]     # dummy
+                [bs.trace_bed([], name=" ")] +      # dummy
+                [bs.trace_bed(...) for ...] +       # main
+                [be.trace_bed([], name="  ")],      # dummy
+                layout=pl.layout(y_reversed=True)   # so track order becomes up to down
             )
 
     Parameters
@@ -52,6 +53,8 @@ def trace_bed(
     if isinstance(data, str):
         data = load_bed(data, region)
     else:
+        if isinstance(data, BedRecord):
+            data = [data]
         data = filter_bed(data, region)
 
     if len(data) == 0:
@@ -76,7 +79,7 @@ def trace_bed_attr(
     data: Union[str, Sequence[BedRecord]],
     attr: str,
     attr_type: Optional[Type] = None,
-    region: Optional[Union[str, Region]] = None,
+    region: Optional[Union[str, SegRecord]] = None,
     col: Optional[str] = None,
     line_width: float = 2,
     name: Optional[str] = None,
@@ -107,6 +110,8 @@ def trace_bed_attr(
     else:
         if attr_type is not None:
             logger.info("Ignored `attr_type` because pre-loaded data is specified.")
+        if isinstance(data, BedRecord):
+            data = [data]
         data = filter_bed(data, region)
 
     if name is None:

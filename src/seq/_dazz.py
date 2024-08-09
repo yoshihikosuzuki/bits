@@ -5,7 +5,7 @@ from logzero import logger
 
 from ..util import run_command
 from ._io import _change_case
-from ._type import DazzRecord, SeqInterval
+from ._type import DazzRecord, SegRecord
 
 
 def fasta_to_db(
@@ -79,7 +79,7 @@ def load_db_track(
     track_name: str,
     dbid_range: Optional[Tuple[int, int]] = None,
     verbose: bool = True,
-) -> Dict[int, List[SeqInterval]]:
+) -> Dict[int, List[SegRecord]]:
     """Load track data of a DAZZ_DB file.
     Running a command like: `$ DBdump -r -m{track_name} {db_fname} {dbid_range}`.
     """
@@ -97,7 +97,7 @@ def load_db_track(
             poss = list(map(int, line.split()[2:]))
             assert len(poss) % 2 == 0, f"Cannot find pair of positions: {line}"
             tracks[int(read_id)] = [
-                SeqInterval(b, e) for b, e in zip(poss[::2], poss[1::2])
+                SegRecord(b=b, e=e) for b, e in zip(poss[::2], poss[1::2])
             ]
             count += len(poss) // 2
     if verbose:
