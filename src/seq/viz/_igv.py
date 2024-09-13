@@ -135,20 +135,37 @@ class IGVbrowser:
         height: Optional[int] = 50,
         auto_height: bool = True,
     ):
-        """bed, gtf are accepted."""
-        ext = bed_fname.split('.')[-1]
+        """bed, bb, bed.gz, gtf are accepted."""
+        ext = bed_fname.split(".")[-1]
+        is_gz = False
+        if ext == "gz":
+            ext = bed_fname.split(".")[-2]
+            is_gz = True
         if name is None:
             name = ext
-        self.b.load_track(
-            {
-                "name": name,
-                "path": bed_fname,
-                "format": ext,
-                "type": "annotation",
-                "height": height,
-                "autoHeight": auto_height,
-            }
-        )
+        if not is_gz:
+            self.b.load_track(
+                {
+                    "name": name,
+                    "path": bed_fname,
+                    "format": ext,
+                    "type": "annotation",
+                    "height": height,
+                    "autoHeight": auto_height,
+                }
+            )
+        else:
+            self.b.load_track(
+                {
+                    "name": name,
+                    "path": bed_fname,
+                    "indexPath": f"{bed_fname}.tbi",
+                    "format": ext,
+                    "type": "annotation",
+                    "height": height,
+                    "autoHeight": auto_height,
+                }
+            )
         return self
 
     def add_wig(

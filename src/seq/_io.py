@@ -152,6 +152,7 @@ def save_fastq(
 def load_bed(
     in_fname: str,
     region: Optional[Union[str, SegRecord]] = None,
+    attr_cols: Optional[List[int]] = None,
     attrs: List[Tuple[str, Type]] = [],
     verbose: bool = True,
 ) -> List[BedRecord]:
@@ -161,6 +162,8 @@ def load_bed(
     ----------
     in_fname
         Input file name of a bed file
+    attr_cols, optional
+        A list of (1-based) indexes of columns for attributes, by default None
     attrs, optional
         A list of tuples of (attr_name, attr_type) for attributes after 4th column, by default []
     verbose, optional
@@ -172,6 +175,10 @@ def load_bed(
     """
     if region is not None and isinstance(region, str):
         region = SegRecord.from_string(region)
+    if attr_cols is not None:
+        assert len(attr_cols) == len(
+            attrs
+        ), f"Inconsistent len(attrs) {len(attrs)} vs len(attr_cols) {len(attr_cols)}"
 
     records = []
     with open(in_fname, "r") as f:
@@ -190,7 +197,9 @@ def load_bed(
                 and (region.e is None or r.e <= region.e)
             ):
                 continue
-            for (attr_name, attr_type), value in zip(attrs, data[3:]):
+            for (attr_name, attr_type), value in zip(
+                attrs, data[3:] if attr_cols is None else [data[n] for n in attr_cols]
+            ):
                 r.__setattr__(attr_name, attr_type(value))
             records.append(r)
     if verbose:
