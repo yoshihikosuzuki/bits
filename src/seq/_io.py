@@ -200,7 +200,8 @@ def load_bed(
             ):
                 continue
             for (attr_name, attr_type), value in zip(
-                attrs, data[3:] if attr_cols is None else [data[n] for n in attr_cols]
+                attrs,
+                data[3:] if attr_cols is None else [data[n - 1] for n in attr_cols],
             ):
                 r.__setattr__(attr_name, attr_type(value))
             records.append(r)
