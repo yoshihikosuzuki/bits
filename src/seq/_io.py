@@ -1,4 +1,5 @@
-from typing import List, Optional, Sequence, Tuple, Type, Union
+from collections import defaultdict
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import pysam
 from logzero import logger
@@ -154,8 +155,9 @@ def load_bed(
     region: Optional[Union[str, SegRecord]] = None,
     attr_cols: Optional[List[int]] = None,
     attrs: List[Tuple[str, Type]] = [],
+    by_chrom: bool = False,
     verbose: bool = True,
-) -> List[BedRecord]:
+) -> Union[List[BedRecord], Dict[str, List[BedRecord]]]:
     """Load a bed file.
 
     Parameters
@@ -188,7 +190,7 @@ def load_bed(
             data = line.strip().split("\t")
             if len(data) < 3:
                 if verbose:
-                    logger.warn(f"Ignoring record: {line.strip()}")
+                    logger.warning(f"Ignoring record: {line.strip()}")
                 continue
             r = BedRecord(chr=data[0], b=int(data[1]), e=int(data[2]))
             if region is not None and not (
@@ -204,7 +206,13 @@ def load_bed(
             records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
-    return records
+    if not by_chrom:
+        return records
+    else:
+        records_by_chrom = defaultdict(list)
+        for r in records:
+            records_by_chrom[r.chr].append(r)
+        return records_by_chrom
 
 
 def filter_bed(

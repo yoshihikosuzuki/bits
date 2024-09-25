@@ -2,8 +2,8 @@
 Defining two most basic classes, SeqRecord and SegRecord, and their inherited classes.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Union
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 from logzero import logger
