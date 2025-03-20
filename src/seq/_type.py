@@ -209,6 +209,7 @@ class SatRecord(BedRecord):
 class GffRecord(BedRecord):
     forward: bool
     type: str
+    source: str
 
     # Modify __repr__ so all the attributes are displayed
     def __repr__(self) -> str:

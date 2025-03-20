@@ -332,6 +332,7 @@ def load_gff(
     region: Optional[Union[str, SegRecord]] = None,
     filter_type: Optional[str] = None,
     guess_attr_type: bool = True,
+    attr_sep: Optional[str] = '=',
     verbose: bool = True,
 ) -> List[GffRecord]:
     """Load a gff file.
@@ -364,7 +365,8 @@ def load_gff(
         for line in f:
             if line.startswith("#"):
                 continue
-            chrom, source, _type, b, e, _, strand, _, attrs = line.strip().split("\t")
+            data = line.strip().split("\t")
+            chrom, source, _type, b, e, _, strand, _ = data[:8]
             if filter_type is not None and _type != filter_type:
                 continue
             b, e = int(b), int(e)
@@ -378,9 +380,14 @@ def load_gff(
                 e=e,
                 forward=(strand == "+"),
                 type=_type,
+                source=source
             )
-            for k, v in map(lambda attr: attr.split("="), attrs.split(";")):
-                r.__setattr__(k, _guess_type(v) if guess_attr_type else v)
+            if len(data) == 9:
+                attrs = data[8]
+                for k, v in map(lambda attr: attr.strip().split(attr_sep), attrs.strip(";").split(";")):
+                    r.__setattr__(k, _guess_type(v) if guess_attr_type else v)
+            elif len(data) >= 10:
+                r.attrs = data[8:].split('\t')
             records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
