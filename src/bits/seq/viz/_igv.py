@@ -14,7 +14,7 @@ class IGVbrowser:
         - https://github.com/igvteam/igv.js/wiki/Tracks-2.0
 
     Usage example in Jupyter:
-      > IGVbrowser("/path/to/fasta", region="chr1:10000-20000") \
+      > IGVbrowser("/path/to/fasta", region="chr1:10000-20000") \\
       >     .add_bam("/path/to/bam", track_name="bam")
     """
 
