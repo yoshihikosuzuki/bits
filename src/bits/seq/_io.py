@@ -387,7 +387,7 @@ def load_gff(
                 for k, v in map(lambda attr: attr.strip().split(attr_sep), attrs.strip(";").split(";")):
                     r.__setattr__(k, _guess_type(v) if guess_attr_type else v)
             elif len(data) >= 10:
-                r.attrs = data[8:].split('\t')
+                r.attrs = data[8:]
             records.append(r)
     if verbose:
         logger.info(f"{in_fname}: {len(records)} records loaded")
