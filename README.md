@@ -1,8 +1,18 @@
+![PyPI](https://img.shields.io/pypi/v/bits-yoshi)
+
 # BITS: miscellaneous BioInformatics ToolS
 
 Basically bioinformatics-related, reusable Python3 codes as a package.
 
 ## How to install
+
+### via PyPI
+
+```bash
+pip install bits-yoshi
+```
+
+### via cloning repository
 
 ```bash
 git clone https://github.com/yoshihikosuzuki/bits
