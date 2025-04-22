@@ -25,6 +25,7 @@ def load_fastx(
     in_fname: str,
     id_range: Optional[Union[int, Tuple[int, int]]] = None,
     case: str = "original",
+    by_name: bool = False,
     verbose: bool = True,
 ) -> List[Union[FastaRecord, FastqRecord]]:
     """Utility function in case one doesn't know sequence type."""
@@ -46,6 +47,7 @@ def load_fasta(
     in_fname: str,
     id_range: Optional[Union[int, Tuple[int, int]]] = None,
     case: str = "original",
+    by_name: bool = False,
     verbose: bool = True,
 ) -> List[FastaRecord]:
     """Load (specified range of) a fasta file. Gzipped files are OK.
@@ -76,13 +78,22 @@ def load_fasta(
         ]
     if verbose:
         logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
-    return seqs if not is_single else seqs[0]
+
+    if is_single:
+        if by_name:
+            logger.info("`by_name` is ignored when `id_range` is a single integer")
+        return seqs[0]
+    elif by_name:
+        return {seq.name: seq for seq in seqs}
+    else:
+        return seqs
 
 
 def load_fastq(
     in_fname: str,
     id_range: Optional[Union[int, Tuple[int, int]]] = None,
     case: str = "original",
+    by_name: bool = False,
     verbose: bool = True,
 ) -> List[FastqRecord]:
     """Load (specified range of) a fastq file. Gzipped files are OK.
@@ -117,7 +128,15 @@ def load_fastq(
         ]
     if verbose:
         logger.info(f"{in_fname}: {len(seqs)} sequences loaded")
-    return seqs if not is_single else seqs[0]
+
+    if is_single:
+        if by_name:
+            logger.info("`by_name` is ignored when `id_range` is a single integer")
+        return seqs[0]
+    elif by_name:
+        return {seq.name: seq for seq in seqs}
+    else:
+        return seqs
 
 
 def save_fasta(
@@ -240,25 +259,33 @@ def filter_bed(
     return records
 
 
-def load_trf(in_trf: str, verbose: bool = True) -> List[SatRecord]:
-    sats = []
+def load_trf(
+    in_trf: str, by_chrom: bool = False, verbose: bool = True
+) -> List[SatRecord]:
+    records = []
     with open(in_trf, "r") as f:
         for line in f:
             if line.startswith("@"):
                 chrom = line.strip()[1:]
                 continue
             data = line.strip().split()
-            sat = SatRecord(
+            record = SatRecord(
                 chr=chrom,
                 b=int(data[0]),
                 e=int(data[1]),
                 unit_seq=data[13],
                 n_copy=float(data[3]),
             )
-            sats.append(sat)
+            records.append(record)
     if verbose:
-        logger.info(f"{in_trf}: {len(sats)} records loaded")
-    return sats
+        logger.info(f"{in_trf}: {len(records)} records loaded")
+    if not by_chrom:
+        return records
+    else:
+        records_by_chrom = defaultdict(list)
+        for r in records:
+            records_by_chrom[r.chr].append(r)
+        return records_by_chrom
 
 
 def load_bam(
@@ -332,7 +359,7 @@ def load_gff(
     region: Optional[Union[str, SegRecord]] = None,
     filter_type: Optional[str] = None,
     guess_attr_type: bool = True,
-    attr_sep: Optional[str] = '=',
+    attr_sep: Optional[str] = "=",
     verbose: bool = True,
 ) -> List[GffRecord]:
     """Load a gff file.
@@ -375,16 +402,14 @@ def load_gff(
             ):
                 continue
             r = GffRecord(
-                chr=chrom,
-                b=b,
-                e=e,
-                forward=(strand == "+"),
-                type=_type,
-                source=source
+                chr=chrom, b=b, e=e, forward=(strand == "+"), type=_type, source=source
             )
             if len(data) == 9:
                 attrs = data[8]
-                for k, v in map(lambda attr: attr.strip().split(attr_sep), attrs.strip(";").split(";")):
+                for k, v in map(
+                    lambda attr: attr.strip().split(attr_sep),
+                    attrs.strip(";").split(";"),
+                ):
                     r.__setattr__(k, _guess_type(v) if guess_attr_type else v)
             elif len(data) >= 10:
                 r.attrs = data[8:]
