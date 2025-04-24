@@ -1,3 +1,5 @@
+## NOTE: deprecated. use GenomePlotGV instead.
+
 from dataclasses import dataclass
 from typing import Optional, Sequence, Union
 
@@ -6,6 +8,59 @@ import plotly_light as pl
 
 from .._io import load_fasta
 from .._type import BedRecord, FastaRecord
+
+## NOTE: seq に番号をつけた版
+
+# def gen_chr_plot(seqs, names=None, title=None, width=750, height=1000):
+#     if names is None:
+#         names = [seq.name for seq in seqs]
+
+#     seq_to_y = {seq.name: i for i, seq in enumerate(reversed(seqs), start=1)}
+
+#     return pl.figure(
+#         pl.rects([
+#             (
+#                 0,
+#                 seq_to_y[seq.name] - 0.25,
+#                 seq.length,
+#                 seq_to_y[seq.name] + 0.25
+#             ) for seq in seqs],
+#             fill_col=None,
+#         ),
+#         pl.layout(
+#             width=width,
+#             height=height,
+#             title=title,
+#             box=False,
+#             x_bounding_line=True,
+#             x_ticks=True
+#         ).update(dict(yaxis=dict(
+#             tickvals=list(seq_to_y.values()),
+#             ticktext=list(seq_to_y.keys()),
+#             range=[min(seq_to_y.values()) - 0.5, max(seq_to_y.values()) + 0.5],
+#         )))
+#     )
+
+
+# def add_bed_records(fig, seqs, bed_records, col, name="", show_legend=False, opacity=1, width=1):
+#     seq_to_y = {seq.name: i for i, seq in enumerate(reversed(seqs), start=1)}
+#     names = set([seq.name for seq in seqs])
+#     bed_records = list(filter(lambda x: x.chr in names, bed_records))
+
+#     fig.add_trace(
+#         pl.rects(
+#             [(x.b, seq_to_y[x.chr] - 0.25, x.e, seq_to_y[x.chr] + 0.25)
+#              for x in bed_records],
+#             opacity=opacity,
+#             fill_col=col,
+#             frame_col=col,
+#             frame_width=width,
+#             name=name,
+#         )
+#     )
+
+
+## NOTE: 旧版
 
 
 @dataclass
