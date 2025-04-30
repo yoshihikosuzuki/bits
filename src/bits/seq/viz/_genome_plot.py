@@ -100,6 +100,7 @@ class GenomePlotGV(GenomeViz):
         col: str,
         plotstyle=None,
         line_width=0.5,
+        strand_plus_char: str = "+",
     ):
         """Add feature tracks (annotation on the sequences) to the plot.
 
@@ -117,11 +118,13 @@ class GenomePlotGV(GenomeViz):
         if plotstyle is None:
             plotstyle = "bigbox" if self.box is True else "box"
         for track in self.feature_tracks:
+            if track.name not in bed_records_by_name:
+                continue
             for x in bed_records_by_name[track.name]:
                 track.add_feature(
                     x.b,
                     x.e,
-                    x.strand if hasattr(x, "strand") else 1,
+                    1 if hasattr(x, "strand") and x.strand == strand_plus_char else -1,
                     plotstyle=plotstyle,
                     color=col,
                     lw=line_width,
@@ -153,7 +156,7 @@ class GenomePlotGV(GenomeViz):
         """
         for track in self.feature_tracks:
             track.add_subtrack(name=name, ylim=ylim, ratio=ratio)
-            self.subtrack_data.append((name, bed_records_by_name, x_func, y_func, col))
+        self.subtrack_data.append((name, bed_records_by_name, x_func, y_func, col))
 
     def show(self, dpi=300, out_image=None):
         """Show the plot.
@@ -172,11 +175,14 @@ class GenomePlotGV(GenomeViz):
         # Plot the subtrack data
         for track in self.feature_tracks:
             for name, bed_records_by_name, x_func, y_func, col in self.subtrack_data:
+                if track.name not in bed_records_by_name:
+                    continue
                 data = bed_records_by_name[track.name]
                 x, y = list(map(x_func, data)), list(map(y_func, data))
                 subtrack = track.get_subtrack(name)
                 subtrack.ax.fill_between(subtrack.transform_coord(x), y, color=col)
 
+        plt.figure(fig)
         plt.show(fig)
 
         if out_image is not None:

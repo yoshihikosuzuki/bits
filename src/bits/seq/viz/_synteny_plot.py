@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -92,7 +92,7 @@ class SyntenyPlotGV(GenomeViz):
     color_map = {
         "SYN": "gray",
         "TRANS": pl.colors["green"],
-        "DUP": pl.colors["green"],
+        "DUP": pl.colors["blue"],
         "INS": pl.colors["white"],
         "DEL": pl.colors["white"],
         "INV": pl.colors["yellow"],
@@ -153,19 +153,27 @@ class SyntenyPlotGV(GenomeViz):
         # Subtrack data
         self.subtrack_data = []
 
+        # Marker data (for plotting a very limited number of points)
+        self.marker_data = []
+
+        # Line data (for plotting a very limited number of points)
+        self.line_data = []
+
     def add_feature(
         self,
         bed_records_by_name: Dict[str, Sequence[BedRecord]],
         col: str,
         plotstyle="box",
         line_width=0.5,
+        strand_plus_char: str = "+",
     ):
         """Add feature tracks (annotation on the sequences) to the plot.
 
         Parameters
         ----------
         bed_records_by_name
-            Dict of {seq_name: [BedRecord]}
+            Dict of {seq_name: [BedRecord]}.
+            If a record `x` has `x.strand`, it will be considered.
         col
             Of the annotations
         plotstyle, optional
@@ -174,14 +182,41 @@ class SyntenyPlotGV(GenomeViz):
             by default 0.5
         """
         for track in self.feature_tracks:
+            if track.name not in bed_records_by_name:
+                continue
             for x in bed_records_by_name[track.name]:
                 track.add_feature(
                     x.b,
                     x.e,
-                    x.strand if hasattr(x, "strand") else 1,
+                    1 if hasattr(x, "strand") and x.strand == strand_plus_char else -1,
                     plotstyle=plotstyle,
                     color=col,
                     lw=line_width,
+                )
+
+    def add_aln(self, df_by_pair: Dict[str, pd.DataFrame], curve=True, line_width=0.1):
+        """Add alignment tracks to the plot.
+
+        Parameters
+        ----------
+        bed_records_by_pair
+            Dict of {(A_seq_name, B_seq_name): pd.DataFrame}}
+        """
+        for (a_name, b_name), df in df_by_pair.items():
+            for _, row in df.iterrows():
+                col = self.color_map.get(row["Type"], "black")
+                is_inv = row["Type"] in ("INV", "INVTR", "INVDP")
+                self.add_link(
+                    (a_name, row["RefStart"], row["RefEnd"]),
+                    (
+                        b_name,
+                        row["QryStart"] if not is_inv else row["QryEnd"],
+                        row["QryEnd"] if not is_inv else row["QryStart"],
+                    ),
+                    color=col,
+                    inverted_color=col,
+                    lw=line_width,
+                    curve=curve,
                 )
 
     def add_subtrack(
@@ -210,32 +245,62 @@ class SyntenyPlotGV(GenomeViz):
         """
         for track in self.feature_tracks:
             track.add_subtrack(name=name, ylim=ylim, ratio=ratio)
-            self.subtrack_data.append((name, bed_records_by_name, x_func, y_func, col))
+        self.subtrack_data.append((name, bed_records_by_name, x_func, y_func, col))
 
-    def add_aln(self, df_by_pair: Dict[str, pd.DataFrame], curve=True, line_width=0.1):
-        """Add alignment tracks to the plot.
+    def add_markers(
+        self,
+        bed_records_by_name: Dict[str, Sequence[BedRecord]],
+        x_func: Callable = lambda record: (record.b + record.e) // 2,
+        y_coords_by_name: Union[float, Dict[str, float]] = 1.5,
+        col="gray",
+        marker_size=15,
+    ):
+        """Add markers to the plot at a specific y-axis level for each seq.
 
         Parameters
         ----------
-        bed_records_by_pair
-            Dict of {(A_seq_name, B_seq_name): pd.DataFrame}}
+        bed_records_by_name
+            Dict of {seq_name: [BedRecord]}
+        x_func, optional
+            Mapping of BedRecord -> x-axis coordinate,
+            by default lambda record: (record.b + record.e) // 2
+        y_coords_by_name, optional
+            The level of y-axis the markers are plotted, by default 1.5
         """
-        for (a_name, b_name), df in df_by_pair.items():
-            for _, row in df.iterrows():
-                col = self.color_map.get(row["Type"], "black")
-                is_inv = row["Type"] in ("INV", "INVTR", "INVDP")
-                self.add_link(
-                    (a_name, row["RefStart"], row["RefEnd"]),
-                    (
-                        b_name,
-                        row["QryStart"] if not is_inv else row["QryEnd"],
-                        row["QryEnd"] if not is_inv else row["QryStart"],
-                    ),
-                    color=col,
-                    inverted_color=col,
-                    lw=line_width,
-                    curve=curve,
-                )
+        if isinstance(y_coords_by_name, float):
+            y_coords_by_name = {
+                track.name: y_coords_by_name for track in self.feature_tracks
+            }
+
+        self.marker_data.append(
+            (bed_records_by_name, x_func, y_coords_by_name, col, marker_size)
+        )
+
+    def add_lines(
+        self,
+        bed_records_by_name: Dict[str, Sequence[BedRecord]],
+        y_coords_by_name: Union[float, Dict[str, float]] = 1.5,
+        col="gray",
+        line_width=1,
+    ):
+        """Add markers to the plot at a specific y-axis level for each seq.
+
+        Parameters
+        ----------
+        bed_records_by_name
+            Dict of {seq_name: [BedRecord]}
+        x_func, optional
+            Mapping of BedRecord -> x-axis coordinate,
+            by default lambda record: (record.b + record.e) // 2
+        y_coords_by_name, optional
+            The level of y-axis the markers are plotted, by default 1.5
+        """
+        if isinstance(y_coords_by_name, float):
+            y_coords_by_name = {
+                track.name: y_coords_by_name for track in self.feature_tracks
+            }
+
+        self.line_data.append((bed_records_by_name, y_coords_by_name, col, line_width))
 
     def show(self, dpi=300, out_image=None):
         """Show the plot.
@@ -254,11 +319,56 @@ class SyntenyPlotGV(GenomeViz):
         # Plot the subtrack data
         for track in self.feature_tracks:
             for name, bed_records_by_name, x_func, y_func, col in self.subtrack_data:
+                if track.name not in bed_records_by_name:
+                    continue
                 data = bed_records_by_name[track.name]
                 x, y = list(map(x_func, data)), list(map(y_func, data))
                 subtrack = track.get_subtrack(name)
                 subtrack.ax.fill_between(subtrack.transform_coord(x), y, color=col)
 
+        # Plot the marker data
+        for track in self.feature_tracks:
+            for (
+                bed_records_by_name,
+                x_func,
+                y_coords_by_name,
+                col,
+                marker_size,
+            ) in self.marker_data:
+                if track.name not in bed_records_by_name:
+                    continue
+                data = bed_records_by_name[track.name]
+                x = list(map(x_func, data))
+                track.ax.scatter(
+                    x=track.transform_coord(x),
+                    y=[y_coords_by_name[track.name]] * len(x),
+                    color=col,
+                    s=marker_size,
+                    clip_on=False,
+                )
+
+        # Plot the line data
+        for track in self.feature_tracks:
+            for (
+                bed_records_by_name,
+                y_coords_by_name,
+                col,
+                line_width,
+            ) in self.line_data:
+                if track.name not in bed_records_by_name:
+                    continue
+                data = bed_records_by_name[track.name]
+                x_b, x_e = [x.b for x in data], [x.e for x in data]
+                track.ax.hlines(
+                    xmin=track.transform_coord(x_b),
+                    xmax=track.transform_coord(x_e),
+                    y=[y_coords_by_name[track.name]] * len(data),
+                    color=col,
+                    lw=line_width,
+                    clip_on=False,
+                )
+
+        plt.figure(fig)
         plt.show(fig)
 
         if out_image is not None:
