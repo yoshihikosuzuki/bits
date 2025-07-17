@@ -1,5 +1,5 @@
 from dataclasses import InitVar, dataclass, field
-from typing import Optional
+from typing import Optional, Tuple
 
 import igv_notebook
 from logzero import logger
@@ -172,6 +172,7 @@ class IGVbrowser:
         self,
         wig_fname: str,
         name: Optional[str] = "annot",
+        range: Optional[Tuple[float, float]] = None,
         height: Optional[int] = 50,
         auto_height: bool = True,
     ):
@@ -181,6 +182,9 @@ class IGVbrowser:
                 "name": name,
                 "path": wig_fname,
                 "type": "wig",
+                "autoscale": range is None,
+                "min": range[0] if range else None,
+                "max": range[1] if range else None,
                 "height": height,
                 "autoHeight": auto_height,
             }
