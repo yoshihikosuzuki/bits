@@ -79,6 +79,7 @@ class DotPlot:
         out_fname: Optional[str] = None,
         original_plot: bool = False,
         static: bool = False,
+        verbose: bool = False,
     ):
         """Draw a dot plot between two sequences.
 
@@ -181,6 +182,7 @@ class DotPlot:
                 layout,
             ),
             return_fig=return_fig,
+            verbose=verbose
         )
         if return_fig:
             return fig
@@ -201,6 +203,7 @@ class DotPlot:
         out_fname: Optional[str] = None,
         original_plot: bool = False,
         static: bool = False,
+        verbose: bool = False,
     ):
         """Draw a self-vs-self dot plot of a single sequence.
 
@@ -234,4 +237,5 @@ class DotPlot:
             out_fname,
             original_plot,
             static,
+            verbose
         )
