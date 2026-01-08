@@ -4,8 +4,8 @@ from typing import Dict, List, Optional, Tuple, Union
 from logzero import logger
 
 from ..util import run_command
-from ._io import _change_case
 from ._type import DazzRecord, SegRecord
+from ._util import change_case
 
 
 def fasta_to_db(
@@ -29,7 +29,7 @@ def load_db(
     dbid_range: Optional[Union[int, Tuple[int, int]]] = None,
     case: str = "original",
     verbose: bool = True,
-) -> List[DazzRecord]:
+) -> Union[DazzRecord, List[DazzRecord]]:
     """Load read IDs, original header names, and sequences from a DAZZ_DB file.
     `dbid_range` is e.g. `(1, 10)`, which is equal to `$ DBdump {db_fname} 1-10`.
     """
@@ -63,9 +63,7 @@ def load_db(
                 name = f"{prolog}/{well}/{start}_{end}"
         elif line.startswith("S"):
             _, _, seq = line.split()
-            seqs[i] = DazzRecord(
-                id=int(dazz_id), name=name, seq=_change_case(seq, case)
-            )
+            seqs[i] = DazzRecord(id=int(dazz_id), name=name, seq=change_case(seq, case))
             i += 1
     assert i == n_reads
 
@@ -108,17 +106,15 @@ def load_db_track(
     return tracks
 
 
-def db_to_n_blocks(db_fname: str, verbose: bool = True) -> int:
+def db_to_n_blocks(db_fname: str) -> int:
     """Extract the number of blocks from a DAZZ_DB file."""
     n_blocks = None
     with open(db_fname, "r") as f:
         for line in f:
             if line.startswith("blocks"):
                 n_blocks = int(line.split("=")[1].strip())
-    if n_blocks is not None:
-        return n_blocks
-    if verbose:
-        logger.error(f"{db_fname}: No information on the number of blocks")
+    assert n_blocks is not None, f"Failed to extract number of blocks from {db_fname}"
+    return n_blocks
 
 
 def db_to_n_reads(db_fname: str) -> int:

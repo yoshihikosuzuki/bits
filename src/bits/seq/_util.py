@@ -3,6 +3,17 @@ from typing import List, Sequence, Tuple, Union
 import numpy as np
 
 
+def change_case(seq: str, case: str) -> str:
+    assert case in (
+        "original",
+        "lower",
+        "upper",
+    ), "`case` must be 'original', 'lower', or 'upper'"
+    return (
+        seq if case == "original" else seq.lower() if case == "lower" else seq.upper()
+    )
+
+
 def findall(seq: str, query: str) -> List[int]:
     """List up all the positions of `query` in `seq`."""
     pos = []
@@ -79,51 +90,6 @@ def compress_homopolymer(seq: str) -> str:
             comp_seq += base
         prev_base = base
     return comp_seq
-
-
-def calc_hp_ds_ts(
-    seq: str, rev: bool = False, return_nbase: bool = False, fill: bool = False
-):
-    """For each position of `seq`, calcualte the lengths of homopolymers,
-    dinucleotide satellites, and trinucleotide satellites at the position.
-
-    For example, given:
-        seq = "AAGGGGGCT"
-
-    calc_hp_ds_ts(seq)[0] =
-               121234511 if rev is False else
-               215432111
-
-    Options:
-        @ rev
-        @ return_nbase : If True, return # of bases instead of # of copies
-    """
-    if rev:
-        seq = seq[::-1]
-    hp_lens = [1] * len(seq)
-    ds_lens = [0] * len(seq)
-    ts_lens = [0] * len(seq)
-    for i in range(len(seq)):
-        if i >= 1:
-            if seq[i - 1] == seq[i]:
-                hp_lens[i] = hp_lens[i - 1] + 1
-            else:
-                ds_lens[i] = 1
-                if i >= 3:
-                    if seq[i - 3 : i - 1] == seq[i - 1 : i + 1]:
-                        ds_lens[i] = ds_lens[i - 2] + 1
-        if i >= 2:
-            if seq[i - 2] == seq[i - 1] == seq[i]:
-                continue
-            ts_lens[i] = 1
-            if i >= 5:
-                if seq[i - 5 : i - 2] == seq[i - 2 : i + 1]:
-                    ts_lens[i] = ts_lens[i - 3] + 1
-    if rev:
-        hp_lens, ds_lens, ts_lens = map(
-            lambda x: list(reversed(x)), (hp_lens, ds_lens, ts_lens)
-        )
-    return (hp_lens, ds_lens, ts_lens)
 
 
 def ascii_to_phred(c: str) -> int:

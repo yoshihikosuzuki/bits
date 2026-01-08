@@ -6,39 +6,56 @@ from logzero import logger
 from pyfastx import Fasta, Fastq
 
 from ..util._proc import run_command
-from ._type import BedRecord, FastaRecord, FastqRecord, GffRecord, SatRecord, SegRecord
-from ._util import split_seq
+from ._dazz import load_db
+from ._type import (
+    BedRecord,
+    FastaRecord,
+    FastqRecord,
+    GffRecord,
+    SatRecord,
+    SegRecord,
+    SeqRecord,
+)
+from ._util import change_case, split_seq
 
 
-def _change_case(seq: str, case: str) -> str:
-    assert case in (
-        "original",
-        "lower",
-        "upper",
-    ), "`case` must be 'original', 'lower', or 'upper'"
-    return (
-        seq if case == "original" else seq.lower() if case == "lower" else seq.upper()
-    )
-
-
-def load_fastx(
+def load_seq(
     in_fname: str,
     id_range: Optional[Union[int, Tuple[int, int]]] = None,
     case: str = "original",
     by_name: bool = False,
     verbose: bool = True,
-) -> List[Union[FastaRecord, FastqRecord]]:
-    """Utility function in case one doesn't know sequence type."""
+) -> Union[
+    SeqRecord,
+    List[SeqRecord],
+    Dict[str, SeqRecord],
+]:
+    """Load sequence(s) from DAZZ_DB or FASTA/FASTQ files.
+
+    positional arguments:
+      @ in_fname : Input fasta file name.
+
+    optional arguments:
+      @ id_range : 1-indexed read ID or tuple of start/end read IDs to be read.
+      @ case     : Of the sequence to be stored.
+                   Must be one of {"original", "lower", "upper"}.
+      @ by_name  : If True, return a dict indexed by sequence names.
+    """
+    DAZZ_SUFFIXES = [".db", ".dam"]
     FASTA_SUFFIXES = [".fa", ".fna", ".fasta"]
     FASTQ_SUFFIXES = [".fq", ".fastq"]
+
+    if in_fname.endswith(tuple(DAZZ_SUFFIXES)):
+        assert by_name is False, "`by_name` is not supported for DAZZ_DB files"
+        return load_db(in_fname, id_range, case, verbose)
     if in_fname.endswith(
         tuple(FASTA_SUFFIXES + [f"{suf}.gz" for suf in FASTA_SUFFIXES])
     ):
-        return load_fasta(in_fname, id_range, case, verbose)
+        return load_fasta(in_fname, id_range, case, by_name, verbose)
     elif in_fname.endswith(
         tuple(FASTQ_SUFFIXES + [f"{suf}.gz" for suf in FASTQ_SUFFIXES])
     ):
-        return load_fastq(in_fname, id_range, case, verbose)
+        return load_fastq(in_fname, id_range, case, by_name, verbose)
     else:
         assert False, f"Cannot guess file type: {in_fname}"
 
@@ -49,7 +66,7 @@ def load_fasta(
     case: str = "original",
     by_name: bool = False,
     verbose: bool = True,
-) -> List[FastaRecord]:
+) -> Union[FastaRecord, List[FastaRecord], Dict[str, FastaRecord]]:
     """Load (specified range of) a fasta file. Gzipped files are OK.
 
     positional arguments:
@@ -63,7 +80,7 @@ def load_fasta(
     is_single = isinstance(id_range, int)
     if id_range is None:
         seqs = [
-            FastaRecord(name=name, seq=_change_case(seq, case))
+            FastaRecord(name=name, seq=change_case(seq, case))
             for name, seq in Fasta(in_fname, build_index=False, full_name=True)
         ]
     else:
@@ -73,7 +90,7 @@ def load_fasta(
         out = run_command(command).strip().split("\n")
         assert len(out) % 2 == 0
         seqs = [
-            FastaRecord(name=out[i * 2][1:], seq=_change_case(out[i * 2 + 1], case))
+            FastaRecord(name=out[i * 2][1:], seq=change_case(out[i * 2 + 1], case))
             for i in range(len(out) // 2)
         ]
     if verbose:
@@ -95,7 +112,7 @@ def load_fastq(
     case: str = "original",
     by_name: bool = False,
     verbose: bool = True,
-) -> List[FastqRecord]:
+) -> Union[FastqRecord, List[FastqRecord], Dict[str, FastqRecord]]:
     """Load (specified range of) a fastq file. Gzipped files are OK.
 
     positional arguments:
@@ -109,7 +126,7 @@ def load_fastq(
     is_single = isinstance(id_range, int)
     if id_range is None:
         seqs = [
-            FastqRecord(name=name, seq=_change_case(seq, case), qual=qual)
+            FastqRecord(name=name, seq=change_case(seq, case), qual=qual)
             for name, seq, qual in Fastq(in_fname, build_index=False, full_name=True)
         ]
     else:
@@ -121,7 +138,7 @@ def load_fastq(
         seqs = [
             FastqRecord(
                 name=out[i * 4][1:],
-                seq=_change_case(out[i * 4 + 1], case),
+                seq=change_case(out[i * 4 + 1], case),
                 qual=out[i * 4 + 3],
             )
             for i in range(len(out) // 4)
@@ -211,9 +228,9 @@ def load_bed(
                 if verbose:
                     logger.warning(f"Ignoring record: {line.strip()}")
                 continue
-            r = BedRecord(chr=data[0], b=int(data[1]), e=int(data[2]))
+            r = BedRecord(chrom=data[0], b=int(data[1]), e=int(data[2]))
             if region is not None and not (
-                region.chr == r.chr
+                region.chrom == r.chrom
                 and (region.b is None or region.b <= r.b)
                 and (region.e is None or r.e <= region.e)
             ):
@@ -231,7 +248,7 @@ def load_bed(
     else:
         records_by_chrom = defaultdict(list)
         for r in records:
-            records_by_chrom[r.chr].append(r)
+            records_by_chrom[r.chrom].append(r)
         return records_by_chrom
 
 
@@ -239,7 +256,7 @@ def filter_bed(
     data: Sequence[BedRecord],
     region: Optional[Union[str, SegRecord]],
     verbose: bool = True,
-) -> List[BedRecord]:
+) -> Sequence[BedRecord]:
     """Filter BedRecords that are already loaded."""
     if region is None:
         return data
@@ -249,7 +266,9 @@ def filter_bed(
     n_before = len(data)
     records = list(
         filter(
-            lambda x: x.chr == region.chr and region.b <= x.b and x.e <= region.e,
+            lambda x: x.chrom == region.chrom
+            and (region.b is None or region.b <= x.b)
+            and (region.e is None or x.e <= region.e),
             data,
         )
     )
@@ -261,7 +280,7 @@ def filter_bed(
 
 def load_trf(
     in_trf: str, by_chrom: bool = False, verbose: bool = True
-) -> List[SatRecord]:
+) -> Union[List[SatRecord], Dict[str, List[SatRecord]]]:
     records = []
     with open(in_trf, "r") as f:
         for line in f:
@@ -270,7 +289,7 @@ def load_trf(
                 continue
             data = line.strip().split()
             record = SatRecord(
-                chr=chrom,
+                chrom=chrom,
                 b=int(data[0]),
                 e=int(data[1]),
                 unit_seq=data[13],
@@ -284,7 +303,7 @@ def load_trf(
     else:
         records_by_chrom = defaultdict(list)
         for r in records:
-            records_by_chrom[r.chr].append(r)
+            records_by_chrom[r.chrom].append(r)
         return records_by_chrom
 
 
@@ -387,6 +406,9 @@ def load_gff(
             pass
         return v
 
+    if region is not None and isinstance(region, str):
+        region = SegRecord.from_string(region)
+
     records = []
     with open(in_fname, "r") as f:
         for line in f:
@@ -398,11 +420,18 @@ def load_gff(
                 continue
             b, e = int(b), int(e)
             if region is not None and not (
-                region.chr == chrom and region.b <= b and e < region.e
+                region.chrom == chrom
+                and (region.b is None or region.b <= b)
+                and (region.e is None or e < region.e)
             ):
                 continue
             r = GffRecord(
-                chr=chrom, b=b, e=e, forward=(strand == "+"), type=_type, source=source
+                chrom=chrom,
+                b=b,
+                e=e,
+                forward=(strand == "+"),
+                type=_type,
+                source=source,
             )
             if len(data) == 9:
                 attrs = data[8]

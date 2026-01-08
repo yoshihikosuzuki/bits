@@ -8,6 +8,7 @@ from ._io import (
     load_fasta,
     load_fastq,
     load_gff,
+    load_seq,
     load_trf,
     load_vcf,
     save_fasta,
@@ -26,7 +27,7 @@ from ._type import (
 )
 from ._util import (
     ascii_to_phred,
-    calc_hp_ds_ts,
+    change_case,
     compress_homopolymer,
     findall,
     phred_to_log10_p_correct,
